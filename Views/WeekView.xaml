@@ -103,6 +103,12 @@
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
+
+            <!-- Overlay Canvas для drag ghost (поверх всего контента) -->
+            <Canvas x:Name="DragOverlayCanvas"
+                    Grid.RowSpan="3"
+                    Panel.ZIndex="1000"
+                    IsHitTestVisible="False"/>
             
             <!-- Заголовки дней -->
             <Grid Grid.Row="0">
@@ -216,7 +222,7 @@
                     </ItemsControl>
                     
                     <!-- Колонки дней -->
-                    <ItemsControl Grid.Column="1" ItemsSource="{Binding Days}">
+                    <ItemsControl x:Name="DaysItemsControl" Grid.Column="1" ItemsSource="{Binding Days}">
                         <ItemsControl.ItemsPanel>
                             <ItemsPanelTemplate>
                                 <UniformGrid Rows="1"/>

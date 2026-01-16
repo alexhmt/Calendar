@@ -17,13 +17,17 @@ public partial class WeekView : UserControl
 {
     private bool _isDragging;
     private Point _dragStartPoint;
+    private double _dragStartY;
+    private double _dragStartX;
+    private int _originalDayIndex;
     private EventLayoutInfo? _draggingLayoutInfo;
     private Rectangle? _dragGhost;
-    private Canvas? _dragCanvas;
+    private FrameworkElement? _dragSourceElement;
     private DateTime _originalStartTime;
 
     private const double HourHeight = 60.0;
     private const int StartHour = 8;
+    private const double TimeColumnWidth = 50.0;
 
     public WeekView()
     {
@@ -40,8 +44,12 @@ public partial class WeekView : UserControl
             element.DataContext is EventLayoutInfo layoutInfo)
         {
             _dragStartPoint = e.GetPosition(this);
+            var canvasPos = e.GetPosition(DragOverlayCanvas);
+            _dragStartY = canvasPos.Y;
+            _dragStartX = canvasPos.X;
             _draggingLayoutInfo = layoutInfo;
             _originalStartTime = layoutInfo.Event.StartTime;
+            _originalDayIndex = GetDayIndexAtPosition(_dragStartX);
             element.CaptureMouse();
         }
     }
@@ -61,14 +69,16 @@ public partial class WeekView : UserControl
         if (!_isDragging && (Math.Abs(diff.X) > 5 || Math.Abs(diff.Y) > 5))
         {
             _isDragging = true;
-            CreateDragGhost(sender as FrameworkElement);
+            _dragSourceElement = sender as FrameworkElement;
+            CreateDragGhost();
         }
 
-        if (_isDragging && _dragGhost != null && _dragCanvas != null)
+        if (_isDragging && _dragGhost != null)
         {
-            // Обновляем позицию призрака
-            var canvasPos = e.GetPosition(_dragCanvas);
+            // Обновляем позицию призрака относительно overlay canvas
+            var canvasPos = e.GetPosition(DragOverlayCanvas);
             Canvas.SetTop(_dragGhost, Math.Max(0, canvasPos.Y - _dragGhost.Height / 2));
+            Canvas.SetLeft(_dragGhost, canvasPos.X - _dragGhost.Width / 2);
         }
     }
 
@@ -82,16 +92,36 @@ public partial class WeekView : UserControl
             element.ReleaseMouseCapture();
         }
 
-        if (_isDragging && _draggingLayoutInfo != null && _dragCanvas != null)
+        if (_isDragging && _draggingLayoutInfo != null && DataContext is WeekViewModel vm)
         {
-            var dropPos = e.GetPosition(_dragCanvas);
-            var newTime = CalculateTimeFromPosition(dropPos.Y, _originalStartTime.Date);
+            var dropPos = e.GetPosition(DragOverlayCanvas);
 
-            // Вызываем команду перемещения
-            if (DataContext is WeekViewModel vm)
-            {
-                vm.MoveEventCommand.Execute((_draggingLayoutInfo.Event, newTime));
-            }
+            // Вычисляем дельту перемещения по Y (время)
+            var deltaY = dropPos.Y - _dragStartY;
+            var deltaHours = deltaY / HourHeight;
+            var deltaMinutes = (int)(deltaHours * 60);
+            deltaMinutes = (deltaMinutes / 15) * 15;
+
+            // Вычисляем новый индекс дня
+            var newDayIndex = GetDayIndexAtPosition(dropPos.X);
+            var deltaDays = newDayIndex - _originalDayIndex;
+
+            // Вычисляем новое время
+            var newTime = _originalStartTime.AddDays(deltaDays).AddMinutes(deltaMinutes);
+
+            // Ограничиваем диапазон времени (8:00 - 23:00)
+            var timeOfDay = newTime.TimeOfDay;
+            if (timeOfDay.Hours < StartHour)
+                newTime = newTime.Date.AddHours(StartHour);
+            else if (timeOfDay.Hours >= 23)
+                newTime = newTime.Date.AddHours(23);
+
+            // Перемещаем событие
+            var evt = _draggingLayoutInfo.Event;
+            var duration = evt.Duration;
+            evt.StartTime = newTime;
+            evt.EndTime = newTime + duration;
+            vm.RefreshView();
         }
 
         CleanupDrag();
@@ -102,7 +132,34 @@ public partial class WeekView : UserControl
     /// </summary>
     public void EventBorder_LostMouseCapture(object sender, MouseEventArgs e)
     {
-        CleanupDrag();
+        // Очистка происходит в PreviewMouseUp
+    }
+
+    /// <summary>
+    /// Определяет индекс дня по X-позиции на DragOverlayCanvas.
+    /// </summary>
+    private int GetDayIndexAtPosition(double xPosition)
+    {
+        if (DataContext is not WeekViewModel vm || vm.Days.Count == 0)
+            return 0;
+
+        // Получаем позицию DaysItemsControl относительно DragOverlayCanvas
+        var daysControlPos = DaysItemsControl.TranslatePoint(new Point(0, 0), DragOverlayCanvas);
+        var daysWidth = DaysItemsControl.ActualWidth;
+        var dayCount = vm.Days.Count;
+
+        if (dayCount == 0 || daysWidth <= 0)
+            return 0;
+
+        // Вычисляем относительную позицию внутри области дней
+        var relativeX = xPosition - daysControlPos.X;
+        var dayWidth = daysWidth / dayCount;
+
+        // Определяем индекс дня
+        var dayIndex = (int)(relativeX / dayWidth);
+
+        // Ограничиваем диапазон
+        return Math.Max(0, Math.Min(dayCount - 1, dayIndex));
     }
 
     /// <summary>
@@ -127,19 +184,15 @@ public partial class WeekView : UserControl
     /// <summary>
     /// Создаёт визуальный призрак для перетаскивания.
     /// </summary>
-    private void CreateDragGhost(FrameworkElement? source)
+    private void CreateDragGhost()
     {
-        if (source == null || _draggingLayoutInfo == null) return;
-
-        // Находим родительский Canvas
-        _dragCanvas = FindParentCanvas(source);
-        if (_dragCanvas == null) return;
+        if (_dragSourceElement == null || _draggingLayoutInfo == null) return;
 
         // Создаём полупрозрачный прямоугольник
         _dragGhost = new Rectangle
         {
-            Width = source.ActualWidth,
-            Height = source.ActualHeight,
+            Width = _dragSourceElement.ActualWidth,
+            Height = _dragSourceElement.ActualHeight,
             Fill = new SolidColorBrush(Color.FromArgb(128, 100, 149, 237)), // Полупрозрачный синий
             Stroke = new SolidColorBrush(Colors.CornflowerBlue),
             StrokeThickness = 2,
@@ -149,25 +202,12 @@ public partial class WeekView : UserControl
             IsHitTestVisible = false
         };
 
-        Canvas.SetTop(_dragGhost, Canvas.GetTop(source));
-        Canvas.SetLeft(_dragGhost, Canvas.GetLeft(source));
-        Canvas.SetZIndex(_dragGhost, 1000);
+        // Позиционируем относительно overlay canvas
+        var sourcePos = _dragSourceElement.TranslatePoint(new Point(0, 0), DragOverlayCanvas);
+        Canvas.SetTop(_dragGhost, sourcePos.Y);
+        Canvas.SetLeft(_dragGhost, sourcePos.X);
 
-        _dragCanvas.Children.Add(_dragGhost);
-    }
-
-    /// <summary>
-    /// Находит родительский Canvas.
-    /// </summary>
-    private static Canvas? FindParentCanvas(DependencyObject? element)
-    {
-        while (element != null)
-        {
-            if (element is Canvas canvas)
-                return canvas;
-            element = VisualTreeHelper.GetParent(element);
-        }
-        return null;
+        DragOverlayCanvas.Children.Add(_dragGhost);
     }
 
     /// <summary>
@@ -175,15 +215,15 @@ public partial class WeekView : UserControl
     /// </summary>
     private void CleanupDrag()
     {
-        if (_dragGhost != null && _dragCanvas != null)
+        if (_dragGhost != null)
         {
-            _dragCanvas.Children.Remove(_dragGhost);
+            DragOverlayCanvas.Children.Remove(_dragGhost);
         }
 
         _isDragging = false;
         _draggingLayoutInfo = null;
         _dragGhost = null;
-        _dragCanvas = null;
+        _dragSourceElement = null;
     }
 
     /// <summary>

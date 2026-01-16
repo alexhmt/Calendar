@@ -15,6 +15,21 @@
         <vm:WeekViewModel/>
     </Window.DataContext>
 
+    <Window.InputBindings>
+        <!-- Ctrl+N: Создать событие -->
+        <KeyBinding Key="N" Modifiers="Ctrl" Command="{Binding CreateEventDialogCommand}"/>
+        <!-- Alt+Left: Предыдущий период -->
+        <KeyBinding Key="Left" Modifiers="Alt" Command="{Binding PreviousWeekCommand}"/>
+        <!-- Alt+Right: Следующий период -->
+        <KeyBinding Key="Right" Modifiers="Alt" Command="{Binding NextWeekCommand}"/>
+        <!-- Ctrl+T: Перейти к сегодня -->
+        <KeyBinding Key="T" Modifiers="Ctrl" Command="{Binding GoToTodayCommand}"/>
+        <!-- Delete: Удалить выбранное событие -->
+        <KeyBinding Key="Delete" Command="{Binding DeleteEventCommand}" CommandParameter="{Binding SelectedEvent}"/>
+        <!-- Enter: Редактировать выбранное событие -->
+        <KeyBinding Key="Return" Command="{Binding EditEventCommand}" CommandParameter="{Binding SelectedEvent}"/>
+    </Window.InputBindings>
+
     <Window.Resources>
         <!-- DataTemplate для режимов День и Неделя -->
         <DataTemplate x:Key="WeekViewTemplate">

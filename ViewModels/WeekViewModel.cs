@@ -443,6 +443,14 @@ public partial class WeekViewModel : ObservableObject
     }
 
     /// <summary>
+    /// Обновляет отображение (вызывается после изменения событий извне).
+    /// </summary>
+    public void RefreshView()
+    {
+        UpdateDays();
+    }
+
+    /// <summary>
     /// Обновляет отображаемые дни.
     /// </summary>
     private void UpdateDays()
