@@ -1,0 +1,32 @@
+<Window x:Class="OutlookCalendar.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:views="clr-namespace:OutlookCalendar.Views"
+        xmlns:vm="clr-namespace:OutlookCalendar.ViewModels"
+        mc:Ignorable="d"
+        Title="Календарь" 
+        Height="750" 
+        Width="1000"
+        MinHeight="500"
+        MinWidth="700"
+        WindowStartupLocation="CenterScreen"
+        Background="#F0F0F0">
+    
+    <Window.DataContext>
+        <vm:WeekViewModel/>
+    </Window.DataContext>
+    
+    <Window.InputBindings>
+        <!-- Горячие клавиши -->
+        <KeyBinding Key="N" Modifiers="Ctrl" Command="{Binding CreateEventCommand}"/>
+        <KeyBinding Key="Left" Modifiers="Alt" Command="{Binding PreviousWeekCommand}"/>
+        <KeyBinding Key="Right" Modifiers="Alt" Command="{Binding NextWeekCommand}"/>
+        <KeyBinding Key="T" Modifiers="Ctrl" Command="{Binding GoToTodayCommand}"/>
+    </Window.InputBindings>
+    
+    <Grid>
+        <views:WeekView DataContext="{Binding}"/>
+    </Grid>
+</Window>

@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <UseWPF>true</UseWPF>
+    <ApplicationIcon>Resources\calendar.ico</ApplicationIcon>
+    <AssemblyName>OutlookCalendar</AssemblyName>
+    <RootNamespace>OutlookCalendar</RootNamespace>
+    <Version>1.0.0</Version>
+    <Authors>Your Company</Authors>
+    <Description>Professional Outlook-style Calendar Component</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.2.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="Resources\**\*" />
+  </ItemGroup>
+
+</Project>
