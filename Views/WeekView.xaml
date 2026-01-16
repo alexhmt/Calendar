@@ -153,39 +153,80 @@
                 </ItemsControl>
             </Grid>
             
-            <!-- Многодневные события -->
+            <!-- Многодневные и AllDay события -->
             <Grid Grid.Row="1" MinHeight="30">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="50"/>
                     <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
-                
-                <Border Grid.Column="0" 
+
+                <Border Grid.Column="0"
                         Background="White"
                         BorderBrush="{StaticResource BorderGray}"
-                        BorderThickness="0,0,1,1"/>
-                
-                <Border Grid.Column="1"
-                        Background="White"
-                        BorderBrush="{StaticResource BorderGray}"
-                        BorderThickness="0,0,0,1"
-                        Padding="4,4">
-                    <ItemsControl ItemsSource="{Binding MultiDayEvents}">
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate>
-                                <Border Background="#FFA500"
-                                        CornerRadius="2"
-                                        Padding="6,2"
-                                        Margin="0,1">
-                                    <TextBlock Text="{Binding Title}"
-                                               Foreground="White"
-                                               FontWeight="SemiBold"
-                                               FontSize="11"/>
-                                </Border>
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
+                        BorderThickness="0,0,1,1">
+                    <TextBlock Text="Весь день"
+                               FontSize="9"
+                               Foreground="#666"
+                               VerticalAlignment="Center"
+                               HorizontalAlignment="Center"
+                               TextWrapping="Wrap"
+                               TextAlignment="Center"/>
                 </Border>
+
+                <!-- AllDay события по дням -->
+                <ItemsControl Grid.Column="1" ItemsSource="{Binding Days}">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <UniformGrid Rows="1"/>
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Border Background="White"
+                                    BorderBrush="{StaticResource BorderGray}"
+                                    BorderThickness="0,0,1,1"
+                                    Padding="2">
+                                <ItemsControl ItemsSource="{Binding AllDayEvents}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Border CornerRadius="2"
+                                                    Padding="4,2"
+                                                    Margin="0,1"
+                                                    Cursor="Hand"
+                                                    behaviors:DoubleClickBehavior.Command="{Binding DataContext.EditEventCommand,
+                                                        RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                    behaviors:DoubleClickBehavior.CommandParameter="{Binding}">
+                                                <Border.Style>
+                                                    <Style TargetType="Border">
+                                                        <Setter Property="Background" Value="#E6E6FA"/>
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding Category}" Value="Important">
+                                                                <Setter Property="Background" Value="#FF6347"/>
+                                                            </DataTrigger>
+                                                            <DataTrigger Binding="{Binding Category}" Value="Business">
+                                                                <Setter Property="Background" Value="#6495ED"/>
+                                                            </DataTrigger>
+                                                            <DataTrigger Binding="{Binding Category}" Value="Holiday">
+                                                                <Setter Property="Background" Value="#FFA500"/>
+                                                            </DataTrigger>
+                                                            <DataTrigger Binding="{Binding Category}" Value="Personal">
+                                                                <Setter Property="Background" Value="#90EE90"/>
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </Border.Style>
+                                                <TextBlock Text="{Binding Title}"
+                                                           FontWeight="SemiBold"
+                                                           FontSize="10"
+                                                           TextTrimming="CharacterEllipsis"/>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
             </Grid>
             
             <!-- Сетка календаря -->

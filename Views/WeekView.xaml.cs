@@ -107,20 +107,31 @@ public partial class WeekView : UserControl
             var deltaDays = newDayIndex - _originalDayIndex;
 
             // Вычисляем новое время
+            var evt = _draggingLayoutInfo.Event;
+            var duration = evt.Duration;
             var newTime = _originalStartTime.AddDays(deltaDays).AddMinutes(deltaMinutes);
 
             // Ограничиваем диапазон времени (8:00 - 23:00)
-            var timeOfDay = newTime.TimeOfDay;
-            if (timeOfDay.Hours < StartHour)
-                newTime = newTime.Date.AddHours(StartHour);
-            else if (timeOfDay.Hours >= 23)
-                newTime = newTime.Date.AddHours(23);
+            var minTime = newTime.Date.AddHours(StartHour);
+            var maxTime = newTime.Date.AddHours(23).AddMinutes(59);
+
+            if (newTime < minTime)
+                newTime = minTime;
+
+            // Убедимся, что событие не станет многодневным (EndTime в тот же день)
+            var newEndTime = newTime + duration;
+            if (newEndTime.Date > newTime.Date)
+            {
+                // Сдвигаем начало назад, чтобы конец был в 23:59
+                newTime = newTime.Date.AddHours(23).AddMinutes(59) - duration;
+                if (newTime < minTime)
+                    newTime = minTime;
+                newEndTime = newTime + duration;
+            }
 
             // Перемещаем событие
-            var evt = _draggingLayoutInfo.Event;
-            var duration = evt.Duration;
             evt.StartTime = newTime;
-            evt.EndTime = newTime + duration;
+            evt.EndTime = newEndTime;
             vm.RefreshView();
         }
 
