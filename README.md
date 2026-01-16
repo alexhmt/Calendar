@@ -7,13 +7,17 @@
 ## Возможности
 
 - ✅ Недельное представление (рабочая/полная неделя)
-- ✅ Многодневные события
+- ✅ Дневное и месячное представление
+- ✅ Многодневные события и события "Весь день"
 - ✅ Цветовые категории событий
-- ✅ Drag & Drop перетаскивание событий
+- ✅ Drag & Drop перетаскивание событий между днями
+- ✅ Изменение длительности события перетаскиванием краёв
+- ✅ Выделение событий с визуальной рамкой
+- ✅ Контекстное меню (Копировать, Вырезать, Вставить, Удалить)
 - ✅ Панель задач
-- ✅ Навигация по неделям
+- ✅ Навигация по периодам
 - ✅ Диалог редактирования событий
-- ✅ Сохранение/загрузка в JSON
+- ✅ Автосохранение/загрузка в JSON
 - ✅ MVVM-архитектура
 - ✅ Горячие клавиши
 
@@ -62,20 +66,21 @@ OutlookCalendar/
 │   ├── CalendarEvent.cs      # Модель события
 │   └── CalendarTask.cs       # Модель задачи
 ├── ViewModels/
-│   └── WeekViewModel.cs      # ViewModel недельного вида
+│   └── WeekViewModel.cs      # ViewModel для всех режимов
 ├── Views/
-│   ├── WeekView.xaml         # Недельное представление
+│   ├── WeekView.xaml         # Недельное/дневное представление
+│   ├── MonthView.xaml        # Месячное представление
+│   ├── TasksSidePanel.xaml   # Боковая панель задач
 │   └── EventEditDialog.xaml  # Диалог редактирования
-├── Controls/
-│   └── EventControl.xaml     # Контрол события
 ├── Converters/
 │   └── CalendarConverters.cs # XAML-конвертеры
 ├── Helpers/
-│   └── EventLayoutHelper.cs  # Расчёт позиций событий
+│   ├── EventLayoutHelper.cs  # Расчёт позиций событий
+│   └── BindingProxy.cs       # Прокси для ContextMenu
+├── Behaviors/
+│   └── DoubleClickBehavior.cs # Поведение двойного клика
 ├── Services/
 │   └── CalendarService.cs    # Сервис данных
-├── Styles/
-│   └── CalendarStyles.xaml   # Стили Outlook
 ├── App.xaml
 └── MainWindow.xaml
 ```
@@ -132,17 +137,28 @@ public enum EventCategory
 ```csharp
 // Основные свойства
 DateTime CurrentWeekStart { get; }
+CalendarViewMode ViewMode { get; }              // Day, WorkWeek, FullWeek, Month
 ObservableCollection<DayViewModel> Days { get; }
 ObservableCollection<CalendarEvent> MultiDayEvents { get; }
 ObservableCollection<CalendarTask> Tasks { get; }
 CalendarEvent? SelectedEvent { get; }
 
-// Команды
+// Команды навигации
 ICommand PreviousWeekCommand { get; }
 ICommand NextWeekCommand { get; }
 ICommand GoToTodayCommand { get; }
-ICommand CreateEventCommand { get; }
+ICommand SetViewModeCommand { get; }
+
+// Команды событий
+ICommand CreateEventDialogCommand { get; }
+ICommand EditEventCommand { get; }
 ICommand DeleteEventCommand { get; }
+ICommand SelectEventCommand { get; }
+
+// Команды буфера обмена
+ICommand CopyEventCommand { get; }
+ICommand CutEventCommand { get; }
+ICommand PasteEventCommand { get; }
 ```
 
 ## Кастомизация
