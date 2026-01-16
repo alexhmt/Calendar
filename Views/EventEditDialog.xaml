@@ -14,10 +14,6 @@
     
     <Window.Resources>
         <ResourceDictionary>
-            <ResourceDictionary.MergedDictionaries>
-                <ResourceDictionary Source="/Styles/CalendarStyles.xaml"/>
-            </ResourceDictionary.MergedDictionaries>
-            
             <!-- Список категорий -->
             <ObjectDataProvider x:Key="CategoryValues" 
                                 MethodName="GetValues" 
