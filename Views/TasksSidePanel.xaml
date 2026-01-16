@@ -1,0 +1,186 @@
+<UserControl x:Class="OutlookCalendar.Views.TasksSidePanel"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             mc:Ignorable="d"
+             d:DesignHeight="600" d:DesignWidth="250"
+             Background="White">
+
+    <UserControl.Resources>
+        <SolidColorBrush x:Key="BorderGray" Color="#A5ACB5"/>
+        <SolidColorBrush x:Key="HighPriorityColor" Color="#FF6347"/>
+        <SolidColorBrush x:Key="NormalPriorityColor" Color="#6495ED"/>
+        <SolidColorBrush x:Key="LowPriorityColor" Color="#90EE90"/>
+
+        <LinearGradientBrush x:Key="HeaderGradient" StartPoint="0,0" EndPoint="0,1">
+            <GradientStop Color="#FFFFFF" Offset="0"/>
+            <GradientStop Color="#CFE4F7" Offset="0.5"/>
+            <GradientStop Color="#B8CCE4" Offset="1"/>
+        </LinearGradientBrush>
+    </UserControl.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- Заголовок -->
+        <Border Grid.Row="0"
+                Background="{StaticResource HeaderGradient}"
+                BorderBrush="{StaticResource BorderGray}"
+                BorderThickness="0,0,0,1"
+                Padding="8,6">
+            <TextBlock Text="Задачи"
+                       FontWeight="SemiBold"
+                       FontSize="14"
+                       Foreground="#333"/>
+        </Border>
+
+        <!-- Содержимое панели -->
+        <TabControl Grid.Row="1"
+                    BorderThickness="0"
+                    Padding="0"
+                    Background="Transparent">
+            <TabItem Header="Список дел">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <ItemsControl ItemsSource="{Binding Tasks}" Margin="8">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border BorderBrush="#E0E0E0"
+                                        BorderThickness="0,0,0,1"
+                                        Padding="4,6"
+                                        Margin="0,0,0,2">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+
+                                        <CheckBox Grid.Column="0"
+                                                  IsChecked="{Binding IsCompleted}"
+                                                  VerticalAlignment="Top"
+                                                  Margin="0,2,8,0"/>
+
+                                        <StackPanel Grid.Column="1">
+                                            <TextBlock Text="{Binding Title}"
+                                                       TextWrapping="Wrap"
+                                                       FontSize="12">
+                                                <TextBlock.Style>
+                                                    <Style TargetType="TextBlock">
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding IsCompleted}" Value="True">
+                                                                <Setter Property="TextDecorations" Value="Strikethrough"/>
+                                                                <Setter Property="Foreground" Value="#999"/>
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </TextBlock.Style>
+                                            </TextBlock>
+                                            <TextBlock Text="{Binding DueDate, StringFormat='{}{0:dd.MM.yyyy}'}"
+                                                       FontSize="10"
+                                                       Foreground="#666"
+                                                       Margin="0,2,0,0"/>
+                                        </StackPanel>
+
+                                        <!-- Индикатор приоритета -->
+                                        <Rectangle Grid.Column="2"
+                                                   Width="8"
+                                                   Height="8"
+                                                   RadiusX="4"
+                                                   RadiusY="4"
+                                                   VerticalAlignment="Top"
+                                                   Margin="4,4,0,0">
+                                            <Rectangle.Style>
+                                                <Style TargetType="Rectangle">
+                                                    <Setter Property="Fill" Value="{StaticResource NormalPriorityColor}"/>
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding Priority}" Value="High">
+                                                            <Setter Property="Fill" Value="{StaticResource HighPriorityColor}"/>
+                                                        </DataTrigger>
+                                                        <DataTrigger Binding="{Binding Priority}" Value="Low">
+                                                            <Setter Property="Fill" Value="{StaticResource LowPriorityColor}"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </Rectangle.Style>
+                                        </Rectangle>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
+            </TabItem>
+
+            <TabItem Header="Задачи сегодня">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <ItemsControl ItemsSource="{Binding TodayTasks}" Margin="8">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border BorderBrush="#E0E0E0"
+                                        BorderThickness="0,0,0,1"
+                                        Padding="4,6"
+                                        Margin="0,0,0,2">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+
+                                        <CheckBox Grid.Column="0"
+                                                  IsChecked="{Binding IsCompleted}"
+                                                  VerticalAlignment="Top"
+                                                  Margin="0,2,8,0"/>
+
+                                        <TextBlock Grid.Column="1"
+                                                   Text="{Binding Title}"
+                                                   TextWrapping="Wrap"
+                                                   FontSize="12">
+                                            <TextBlock.Style>
+                                                <Style TargetType="TextBlock">
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding IsCompleted}" Value="True">
+                                                            <Setter Property="TextDecorations" Value="Strikethrough"/>
+                                                            <Setter Property="Foreground" Value="#999"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </TextBlock.Style>
+                                        </TextBlock>
+
+                                        <!-- Индикатор приоритета -->
+                                        <Rectangle Grid.Column="2"
+                                                   Width="8"
+                                                   Height="8"
+                                                   RadiusX="4"
+                                                   RadiusY="4"
+                                                   VerticalAlignment="Top"
+                                                   Margin="4,4,0,0">
+                                            <Rectangle.Style>
+                                                <Style TargetType="Rectangle">
+                                                    <Setter Property="Fill" Value="{StaticResource NormalPriorityColor}"/>
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding Priority}" Value="High">
+                                                            <Setter Property="Fill" Value="{StaticResource HighPriorityColor}"/>
+                                                        </DataTrigger>
+                                                        <DataTrigger Binding="{Binding Priority}" Value="Low">
+                                                            <Setter Property="Fill" Value="{StaticResource LowPriorityColor}"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </Rectangle.Style>
+                                        </Rectangle>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
+            </TabItem>
+        </TabControl>
+    </Grid>
+</UserControl>

@@ -3,19 +3,60 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:views="clr-namespace:OutlookCalendar.Views"
         xmlns:vm="clr-namespace:OutlookCalendar.ViewModels"
-        Title="Календарь" 
-        Height="750" 
-        Width="1000"
+        Title="Календарь"
+        Height="750"
+        Width="1200"
         MinHeight="500"
-        MinWidth="700"
+        MinWidth="900"
         WindowStartupLocation="CenterScreen"
         Background="#F0F0F0">
-    
+
     <Window.DataContext>
         <vm:WeekViewModel/>
     </Window.DataContext>
-    
+
+    <Window.Resources>
+        <!-- DataTemplate для режимов День и Неделя -->
+        <DataTemplate x:Key="WeekViewTemplate">
+            <views:WeekView/>
+        </DataTemplate>
+
+        <!-- DataTemplate для режима Месяц -->
+        <DataTemplate x:Key="MonthViewTemplate">
+            <views:MonthView/>
+        </DataTemplate>
+    </Window.Resources>
+
     <Grid>
-        <views:WeekView/>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="Auto"/>
+            <ColumnDefinition Width="250" MinWidth="200" MaxWidth="350"/>
+        </Grid.ColumnDefinitions>
+
+        <!-- Основной календарь с переключением видов -->
+        <ContentControl Grid.Column="0" Content="{Binding}">
+            <ContentControl.Style>
+                <Style TargetType="ContentControl">
+                    <Setter Property="ContentTemplate" Value="{StaticResource WeekViewTemplate}"/>
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding ViewMode}" Value="{x:Static vm:CalendarViewMode.Month}">
+                            <Setter Property="ContentTemplate" Value="{StaticResource MonthViewTemplate}"/>
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </ContentControl.Style>
+        </ContentControl>
+
+        <!-- Разделитель -->
+        <GridSplitter Grid.Column="1"
+                      Width="3"
+                      HorizontalAlignment="Center"
+                      VerticalAlignment="Stretch"
+                      Background="#A5ACB5"
+                      ShowsPreview="True"/>
+
+        <!-- Боковая панель задач -->
+        <views:TasksSidePanel Grid.Column="2"/>
     </Grid>
 </Window>

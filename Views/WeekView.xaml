@@ -1,27 +1,36 @@
 <UserControl x:Class="OutlookCalendar.Views.WeekView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:converters="clr-namespace:OutlookCalendar.Converters"
-             mc:Ignorable="d" 
+             xmlns:behaviors="clr-namespace:OutlookCalendar.Behaviors"
+             xmlns:vm="clr-namespace:OutlookCalendar.ViewModels"
+             mc:Ignorable="d"
              d:DesignHeight="700" d:DesignWidth="900">
-    
+
     <UserControl.Resources>
         <!-- Цвета -->
         <SolidColorBrush x:Key="BorderGray" Color="#A5ACB5"/>
         <SolidColorBrush x:Key="GridLine" Color="#D4D4D4"/>
-        
+
         <LinearGradientBrush x:Key="HeaderGradient" StartPoint="0,0" EndPoint="0,1">
             <GradientStop Color="#FFFFFF" Offset="0"/>
             <GradientStop Color="#CFE4F7" Offset="0.5"/>
             <GradientStop Color="#B8CCE4" Offset="1"/>
         </LinearGradientBrush>
-        
+
         <LinearGradientBrush x:Key="ToolbarGradient" StartPoint="0,0" EndPoint="0,1">
             <GradientStop Color="#FEFEFE" Offset="0"/>
             <GradientStop Color="#ECE9D8" Offset="1"/>
         </LinearGradientBrush>
+
+        <!-- Конвертеры -->
+        <converters:TimeToCanvasTopConverter x:Key="TimeToCanvasTopConverter"/>
+        <converters:EventDurationToHeightConverter x:Key="DurationToHeightConverter"/>
+        <converters:WidthFractionToWidthConverter x:Key="WidthFractionConverter"/>
+        <converters:LeftFractionToLeftConverter x:Key="LeftFractionConverter"/>
+        <converters:StringToVisibilityConverter x:Key="StringToVisibilityConverter"/>
     </UserControl.Resources>
     
     <Grid Background="#F0F0F0">
@@ -29,7 +38,6 @@
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
-            <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
         
         <!-- Верхняя панель инструментов -->
@@ -39,14 +47,35 @@
                 BorderThickness="0,0,0,1"
                 Padding="8,4">
             <StackPanel Orientation="Horizontal">
-                <RadioButton Content="День" Margin="0,0,2,0" Padding="10,4" GroupName="View"/>
-                <RadioButton Content="Неделя" IsChecked="True" Margin="0,0,2,0" Padding="10,4" GroupName="View"/>
-                <RadioButton Content="Месяц" Padding="10,4" GroupName="View"/>
-                
+                <RadioButton Content="День"
+                             Margin="0,0,2,0"
+                             Padding="10,4"
+                             GroupName="View"
+                             Command="{Binding SetViewModeCommand}"
+                             CommandParameter="{x:Static vm:CalendarViewMode.Day}"/>
+                <RadioButton Content="Неделя"
+                             IsChecked="True"
+                             Margin="0,0,2,0"
+                             Padding="10,4"
+                             GroupName="View"
+                             Command="{Binding SetViewModeCommand}"
+                             CommandParameter="{x:Static vm:CalendarViewMode.WorkWeek}"/>
+                <RadioButton Content="Месяц"
+                             Padding="10,4"
+                             GroupName="View"
+                             Command="{Binding SetViewModeCommand}"
+                             CommandParameter="{x:Static vm:CalendarViewMode.Month}"/>
+
                 <Separator Margin="15,0"/>
-                
-                <RadioButton Content="Показывать рабочую неделю" IsChecked="{Binding ShowWorkWeekOnly}" Margin="0,0,10,0" GroupName="WeekMode"/>
-                <RadioButton Content="Показывать полную неделю" GroupName="WeekMode"/>
+
+                <RadioButton Content="Показывать рабочую неделю"
+                             IsChecked="{Binding ShowWorkWeekOnly}"
+                             Margin="0,0,10,0"
+                             GroupName="WeekMode"
+                             Command="{Binding ToggleWeekModeCommand}"/>
+                <RadioButton Content="Показывать полную неделю"
+                             GroupName="WeekMode"
+                             Command="{Binding ToggleWeekModeCommand}"/>
             </StackPanel>
         </Border>
         
@@ -214,7 +243,9 @@
                                     </ItemsControl>
                                     
                                     <!-- События дня -->
-                                    <ItemsControl ItemsSource="{Binding Events}" Margin="2,0">
+                                    <ItemsControl x:Name="EventsItemsControl"
+                                                  ItemsSource="{Binding EventLayouts}"
+                                                  Margin="2,0">
                                         <ItemsControl.ItemsPanel>
                                             <ItemsPanelTemplate>
                                                 <Canvas/>
@@ -224,11 +255,17 @@
                                             <Style TargetType="ContentPresenter">
                                                 <Setter Property="Canvas.Top">
                                                     <Setter.Value>
-                                                        <MultiBinding>
-                                                            <MultiBinding.Converter>
-                                                                <converters:TimeToCanvasTopConverter/>
-                                                            </MultiBinding.Converter>
-                                                            <Binding Path="StartTime"/>
+                                                        <MultiBinding Converter="{StaticResource TimeToCanvasTopConverter}">
+                                                            <Binding Path="Event.StartTime"/>
+                                                        </MultiBinding>
+                                                    </Setter.Value>
+                                                </Setter>
+                                                <Setter Property="Canvas.Left">
+                                                    <Setter.Value>
+                                                        <MultiBinding Converter="{StaticResource LeftFractionConverter}">
+                                                            <Binding Path="LeftFraction"/>
+                                                            <Binding Path="ActualWidth"
+                                                                     RelativeSource="{RelativeSource AncestorType=ItemsControl}"/>
                                                         </MultiBinding>
                                                     </Setter.Value>
                                                 </Setter>
@@ -238,43 +275,69 @@
                                             <DataTemplate>
                                                 <Border CornerRadius="3"
                                                         Padding="4,2"
-                                                        Margin="0,0,4,0"
-                                                        Width="120"
-                                                        MinHeight="25"
-                                                        Cursor="Hand">
+                                                        Margin="0,0,2,0"
+                                                        Cursor="Hand"
+                                                        behaviors:DoubleClickBehavior.Command="{Binding DataContext.EditEventCommand,
+                                                            RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                        behaviors:DoubleClickBehavior.CommandParameter="{Binding Event}"
+                                                        PreviewMouseDown="EventBorder_PreviewMouseDown"
+                                                        MouseMove="EventBorder_MouseMove"
+                                                        PreviewMouseUp="EventBorder_PreviewMouseUp"
+                                                        LostMouseCapture="EventBorder_LostMouseCapture">
+                                                    <Border.Width>
+                                                        <MultiBinding Converter="{StaticResource WidthFractionConverter}">
+                                                            <Binding Path="WidthFraction"/>
+                                                            <Binding Path="ActualWidth"
+                                                                     RelativeSource="{RelativeSource AncestorType=ItemsControl}"/>
+                                                        </MultiBinding>
+                                                    </Border.Width>
+                                                    <Border.Height>
+                                                        <MultiBinding Converter="{StaticResource DurationToHeightConverter}">
+                                                            <Binding Path="Event.StartTime"/>
+                                                            <Binding Path="Event.EndTime"/>
+                                                        </MultiBinding>
+                                                    </Border.Height>
                                                     <Border.Style>
                                                         <Style TargetType="Border">
                                                             <Setter Property="Background" Value="#90EE90"/>
                                                             <Style.Triggers>
-                                                                <DataTrigger Binding="{Binding Category}" Value="Important">
+                                                                <DataTrigger Binding="{Binding Event.Category}" Value="Important">
                                                                     <Setter Property="Background" Value="#FF6347"/>
                                                                 </DataTrigger>
-                                                                <DataTrigger Binding="{Binding Category}" Value="Business">
+                                                                <DataTrigger Binding="{Binding Event.Category}" Value="Business">
                                                                     <Setter Property="Background" Value="#6495ED"/>
                                                                 </DataTrigger>
-                                                                <DataTrigger Binding="{Binding Category}" Value="Meeting">
+                                                                <DataTrigger Binding="{Binding Event.Category}" Value="Meeting">
                                                                     <Setter Property="Background" Value="#FFFF96"/>
                                                                 </DataTrigger>
-                                                                <DataTrigger Binding="{Binding Category}" Value="Travel">
+                                                                <DataTrigger Binding="{Binding Event.Category}" Value="Travel">
                                                                     <Setter Property="Background" Value="#ADD8E6"/>
                                                                 </DataTrigger>
-                                                                <DataTrigger Binding="{Binding Category}" Value="Holiday">
+                                                                <DataTrigger Binding="{Binding Event.Category}" Value="Holiday">
                                                                     <Setter Property="Background" Value="#FFA500"/>
                                                                 </DataTrigger>
                                                             </Style.Triggers>
                                                         </Style>
                                                     </Border.Style>
                                                     <StackPanel>
-                                                        <TextBlock Text="{Binding Title}"
+                                                        <TextBlock Text="{Binding Event.Title}"
                                                                    FontWeight="SemiBold"
                                                                    FontSize="11"
                                                                    TextWrapping="Wrap"
                                                                    Foreground="#333"/>
                                                         <TextBlock FontSize="10" Foreground="#555">
-                                                            <Run Text="{Binding StartTime, StringFormat='{}{0:HH:mm}', Mode=OneWay}"/>
-                                                            <Run Text=" – "/>
-                                                            <Run Text="{Binding EndTime, StringFormat='{}{0:HH:mm}', Mode=OneWay}"/>
+                                                            <Run Text="{Binding Event.StartTime, StringFormat='{}{0:HH:mm}', Mode=OneWay}"/>
+                                                            <Run Text=" - "/>
+                                                            <Run Text="{Binding Event.EndTime, StringFormat='{}{0:HH:mm}', Mode=OneWay}"/>
                                                         </TextBlock>
+                                                        <TextBlock Text="{Binding Event.Description}"
+                                                                   FontSize="10"
+                                                                   FontStyle="Italic"
+                                                                   Foreground="#555"
+                                                                   TextWrapping="Wrap"
+                                                                   Visibility="{Binding Event.Description,
+                                                                       Converter={StaticResource StringToVisibilityConverter},
+                                                                       FallbackValue=Collapsed}"/>
                                                     </StackPanel>
                                                 </Border>
                                             </DataTemplate>
@@ -288,46 +351,5 @@
             </ScrollViewer>
         </Grid>
         
-        <!-- Нижняя панель задач -->
-        <Border Grid.Row="3"
-                Background="White"
-                BorderBrush="{StaticResource BorderGray}"
-                BorderThickness="0,1,0,0"
-                Padding="8,4"
-                MaxHeight="120">
-            <Grid>
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="*"/>
-                </Grid.RowDefinitions>
-                
-                <TextBlock Grid.Row="0" 
-                           Text="Задачи - Показывать по: Срок"
-                           Foreground="#666"
-                           Margin="0,0,0,4"/>
-                
-                <ItemsControl Grid.Row="1" ItemsSource="{Binding Tasks}">
-                    <ItemsControl.ItemsPanel>
-                        <ItemsPanelTemplate>
-                            <WrapPanel/>
-                        </ItemsPanelTemplate>
-                    </ItemsControl.ItemsPanel>
-                    <ItemsControl.ItemTemplate>
-                        <DataTemplate>
-                            <Border BorderBrush="{StaticResource GridLine}"
-                                    BorderThickness="0,0,0,1"
-                                    Padding="4,2"
-                                    Width="250"
-                                    Margin="0,0,10,0">
-                                <StackPanel Orientation="Horizontal">
-                                    <CheckBox IsChecked="{Binding IsCompleted}" VerticalAlignment="Center" Margin="0,0,6,0"/>
-                                    <TextBlock Text="{Binding Title}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/>
-                                </StackPanel>
-                            </Border>
-                        </DataTemplate>
-                    </ItemsControl.ItemTemplate>
-                </ItemsControl>
-            </Grid>
-        </Border>
     </Grid>
 </UserControl>
