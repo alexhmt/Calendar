@@ -21,6 +21,7 @@ public partial class WeekView : UserControl
     private double _dragStartX;
     private int _originalDayIndex;
     private EventLayoutInfo? _draggingLayoutInfo;
+    private CalendarEvent? _draggingAllDayEvent;
     private Rectangle? _dragGhost;
     private FrameworkElement? _dragSourceElement;
     private DateTime _originalStartTime;
@@ -233,9 +234,122 @@ public partial class WeekView : UserControl
 
         _isDragging = false;
         _draggingLayoutInfo = null;
+        _draggingAllDayEvent = null;
         _dragGhost = null;
         _dragSourceElement = null;
     }
+
+    #region AllDay Events Drag & Drop
+
+    /// <summary>
+    /// Начало перетаскивания AllDay события.
+    /// </summary>
+    public void AllDayEvent_PreviewMouseDown(object sender, MouseButtonEventArgs e)
+    {
+        if (e.LeftButton == MouseButtonState.Pressed &&
+            sender is FrameworkElement element &&
+            element.DataContext is CalendarEvent evt)
+        {
+            _dragStartPoint = e.GetPosition(this);
+            _dragStartX = e.GetPosition(DragOverlayCanvas).X;
+            _draggingAllDayEvent = evt;
+            _originalStartTime = evt.StartTime;
+            _originalDayIndex = GetDayIndexAtPosition(_dragStartX);
+            _dragSourceElement = element;
+            element.CaptureMouse();
+        }
+    }
+
+    /// <summary>
+    /// Обработка движения мыши при перетаскивании AllDay события.
+    /// </summary>
+    public void AllDayEvent_MouseMove(object sender, MouseEventArgs e)
+    {
+        if (e.LeftButton != MouseButtonState.Pressed || _draggingAllDayEvent == null)
+            return;
+
+        var currentPos = e.GetPosition(this);
+        var diff = currentPos - _dragStartPoint;
+
+        // Начинаем drag только после перемещения на 5 пикселей
+        if (!_isDragging && Math.Abs(diff.X) > 5)
+        {
+            _isDragging = true;
+            CreateAllDayDragGhost();
+        }
+
+        if (_isDragging && _dragGhost != null)
+        {
+            var canvasPos = e.GetPosition(DragOverlayCanvas);
+            Canvas.SetLeft(_dragGhost, canvasPos.X - _dragGhost.Width / 2);
+        }
+    }
+
+    /// <summary>
+    /// Завершение перетаскивания AllDay события.
+    /// </summary>
+    public void AllDayEvent_PreviewMouseUp(object sender, MouseButtonEventArgs e)
+    {
+        if (sender is FrameworkElement element)
+        {
+            element.ReleaseMouseCapture();
+        }
+
+        if (_isDragging && _draggingAllDayEvent != null && DataContext is WeekViewModel vm)
+        {
+            var dropX = e.GetPosition(DragOverlayCanvas).X;
+            var newDayIndex = GetDayIndexAtPosition(dropX);
+            var deltaDays = newDayIndex - _originalDayIndex;
+
+            if (deltaDays != 0)
+            {
+                var evt = _draggingAllDayEvent;
+                var duration = evt.Duration;
+                evt.StartTime = _originalStartTime.AddDays(deltaDays);
+                evt.EndTime = evt.StartTime + duration;
+                vm.RefreshView();
+            }
+        }
+
+        CleanupDrag();
+    }
+
+    /// <summary>
+    /// Отмена перетаскивания AllDay события.
+    /// </summary>
+    public void AllDayEvent_LostMouseCapture(object sender, MouseEventArgs e)
+    {
+        // Очистка происходит в PreviewMouseUp
+    }
+
+    /// <summary>
+    /// Создаёт визуальный призрак для перетаскивания AllDay события.
+    /// </summary>
+    private void CreateAllDayDragGhost()
+    {
+        if (_dragSourceElement == null || _draggingAllDayEvent == null) return;
+
+        _dragGhost = new Rectangle
+        {
+            Width = _dragSourceElement.ActualWidth,
+            Height = _dragSourceElement.ActualHeight,
+            Fill = new SolidColorBrush(Color.FromArgb(128, 100, 149, 237)),
+            Stroke = new SolidColorBrush(Colors.CornflowerBlue),
+            StrokeThickness = 2,
+            StrokeDashArray = new DoubleCollection { 4, 2 },
+            RadiusX = 3,
+            RadiusY = 3,
+            IsHitTestVisible = false
+        };
+
+        var sourcePos = _dragSourceElement.TranslatePoint(new Point(0, 0), DragOverlayCanvas);
+        Canvas.SetTop(_dragGhost, sourcePos.Y);
+        Canvas.SetLeft(_dragGhost, sourcePos.X);
+
+        DragOverlayCanvas.Children.Add(_dragGhost);
+    }
+
+    #endregion
 
     /// <summary>
     /// Обработка двойного клика на пустом месте для создания события.

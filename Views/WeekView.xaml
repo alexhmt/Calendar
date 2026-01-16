@@ -195,7 +195,11 @@
                                                     Cursor="Hand"
                                                     behaviors:DoubleClickBehavior.Command="{Binding DataContext.EditEventCommand,
                                                         RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                                    behaviors:DoubleClickBehavior.CommandParameter="{Binding}">
+                                                    behaviors:DoubleClickBehavior.CommandParameter="{Binding}"
+                                                    PreviewMouseDown="AllDayEvent_PreviewMouseDown"
+                                                    MouseMove="AllDayEvent_MouseMove"
+                                                    PreviewMouseUp="AllDayEvent_PreviewMouseUp"
+                                                    LostMouseCapture="AllDayEvent_LostMouseCapture">
                                                 <Border.Style>
                                                     <Style TargetType="Border">
                                                         <Setter Property="Background" Value="#E6E6FA"/>
