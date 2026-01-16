@@ -1,7 +1,10 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.IO;
 using System.Linq;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Windows;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -148,6 +151,18 @@ public partial class WeekViewModel : ObservableObject
 {
     private readonly List<CalendarEvent> _allEvents = [];
 
+    private static readonly string DataFilePath = Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+        "OutlookCalendar",
+        "calendar_data.json");
+
+    private static readonly JsonSerializerOptions JsonOptions = new()
+    {
+        WriteIndented = true,
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+        Converters = { new JsonStringEnumConverter() }
+    };
+
     [ObservableProperty]
     private DateTime _currentWeekStart;
 
@@ -241,8 +256,8 @@ public partial class WeekViewModel : ObservableObject
     {
         CurrentWeekStart = GetWeekStart(DateTime.Today);
         CurrentMonth = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1);
+        LoadData();
         UpdateDays();
-        LoadSampleData();
     }
 
     /// <summary>
@@ -365,6 +380,7 @@ public partial class WeekViewModel : ObservableObject
 
         _allEvents.Remove(calendarEvent);
         UpdateDays();
+        SaveData();
     }
 
     /// <summary>
@@ -432,6 +448,7 @@ public partial class WeekViewModel : ObservableObject
     {
         _allEvents.Add(calendarEvent);
         UpdateDays();
+        SaveData();
     }
 
     /// <summary>
@@ -448,6 +465,7 @@ public partial class WeekViewModel : ObservableObject
     public void RefreshView()
     {
         UpdateDays();
+        SaveData();
     }
 
     /// <summary>
@@ -621,6 +639,73 @@ public partial class WeekViewModel : ObservableObject
         OnPropertyChanged(nameof(PeriodTitle));
     }
 
+    #region Data Persistence
+
+    /// <summary>
+    /// Загружает данные из файла или создаёт демо-данные при первом запуске.
+    /// </summary>
+    private void LoadData()
+    {
+        try
+        {
+            if (File.Exists(DataFilePath))
+            {
+                var json = File.ReadAllText(DataFilePath);
+                var data = JsonSerializer.Deserialize<CalendarDataDto>(json, JsonOptions);
+
+                if (data != null)
+                {
+                    _allEvents.Clear();
+                    _allEvents.AddRange(data.Events.Select(dto => dto.ToModel()));
+
+                    Tasks.Clear();
+                    foreach (var task in data.Tasks.Select(dto => dto.ToModel()))
+                    {
+                        Tasks.Add(task);
+                    }
+                    return;
+                }
+            }
+        }
+        catch
+        {
+            // При ошибке загрузки используем демо-данные
+        }
+
+        // Если файл не существует или ошибка - загружаем демо-данные
+        LoadSampleData();
+    }
+
+    /// <summary>
+    /// Сохраняет данные в файл.
+    /// </summary>
+    private void SaveData()
+    {
+        try
+        {
+            var directory = Path.GetDirectoryName(DataFilePath);
+            if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
+            {
+                Directory.CreateDirectory(directory);
+            }
+
+            var data = new CalendarDataDto
+            {
+                Events = _allEvents.Select(CalendarEventDto.FromModel).ToList(),
+                Tasks = Tasks.Select(CalendarTaskDto.FromModel).ToList()
+            };
+
+            var json = JsonSerializer.Serialize(data, JsonOptions);
+            File.WriteAllText(DataFilePath, json);
+        }
+        catch
+        {
+            // Игнорируем ошибки сохранения
+        }
+    }
+
+    #endregion
+
     /// <summary>
     /// Загружает тестовые данные (как на скриншоте).
     /// </summary>
@@ -757,3 +842,132 @@ public partial class WeekViewModel : ObservableObject
         UpdateDays();
     }
 }
+
+#region DTO Classes for Serialization
+
+/// <summary>
+/// DTO для сериализации данных календаря.
+/// </summary>
+file class CalendarDataDto
+{
+    [JsonPropertyName("events")]
+    public List<CalendarEventDto> Events { get; set; } = [];
+
+    [JsonPropertyName("tasks")]
+    public List<CalendarTaskDto> Tasks { get; set; } = [];
+}
+
+/// <summary>
+/// DTO для события календаря.
+/// </summary>
+file class CalendarEventDto
+{
+    [JsonPropertyName("id")]
+    public Guid Id { get; set; }
+
+    [JsonPropertyName("title")]
+    public string Title { get; set; } = string.Empty;
+
+    [JsonPropertyName("description")]
+    public string Description { get; set; } = string.Empty;
+
+    [JsonPropertyName("location")]
+    public string Location { get; set; } = string.Empty;
+
+    [JsonPropertyName("startTime")]
+    public DateTime StartTime { get; set; }
+
+    [JsonPropertyName("endTime")]
+    public DateTime EndTime { get; set; }
+
+    [JsonPropertyName("isAllDay")]
+    public bool IsAllDay { get; set; }
+
+    [JsonPropertyName("category")]
+    public EventCategory Category { get; set; }
+
+    [JsonPropertyName("isHighPriority")]
+    public bool IsHighPriority { get; set; }
+
+    [JsonPropertyName("notes")]
+    public string Notes { get; set; } = string.Empty;
+
+    public static CalendarEventDto FromModel(CalendarEvent e) => new()
+    {
+        Id = e.Id,
+        Title = e.Title,
+        Description = e.Description,
+        Location = e.Location,
+        StartTime = e.StartTime,
+        EndTime = e.EndTime,
+        IsAllDay = e.IsAllDay,
+        Category = e.Category,
+        IsHighPriority = e.IsHighPriority,
+        Notes = e.Notes
+    };
+
+    public CalendarEvent ToModel() => new()
+    {
+        Id = Id,
+        Title = Title,
+        Description = Description,
+        Location = Location,
+        StartTime = StartTime,
+        EndTime = EndTime,
+        IsAllDay = IsAllDay,
+        Category = Category,
+        IsHighPriority = IsHighPriority,
+        Notes = Notes
+    };
+}
+
+/// <summary>
+/// DTO для задачи календаря.
+/// </summary>
+file class CalendarTaskDto
+{
+    [JsonPropertyName("id")]
+    public Guid Id { get; set; }
+
+    [JsonPropertyName("title")]
+    public string Title { get; set; } = string.Empty;
+
+    [JsonPropertyName("description")]
+    public string Description { get; set; } = string.Empty;
+
+    [JsonPropertyName("dueDate")]
+    public DateTime? DueDate { get; set; }
+
+    [JsonPropertyName("priority")]
+    public TaskPriority Priority { get; set; }
+
+    [JsonPropertyName("status")]
+    public TaskStatus Status { get; set; }
+
+    [JsonPropertyName("percentComplete")]
+    public int PercentComplete { get; set; }
+
+    public static CalendarTaskDto FromModel(CalendarTask t) => new()
+    {
+        Id = t.Id,
+        Title = t.Title,
+        Description = t.Description,
+        DueDate = t.DueDate,
+        Priority = t.Priority,
+        Status = t.Status,
+        PercentComplete = t.PercentComplete
+    };
+
+    public CalendarTask ToModel() => new()
+    {
+        Id = Id,
+        Title = Title,
+        Description = Description,
+        DueDate = DueDate,
+        Priority = Priority,
+        Status = Status,
+        PercentComplete = PercentComplete
+    };
+}
+
+#endregion
