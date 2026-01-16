@@ -330,12 +330,10 @@ public partial class WeekViewModel : ObservableObject
     }
 
     /// <summary>
-    /// Переключение между рабочей и полной неделей.
+    /// Вызывается при изменении режима отображения недели.
     /// </summary>
-    [RelayCommand]
-    private void ToggleWeekMode()
+    partial void OnShowWorkWeekOnlyChanged(bool value)
     {
-        ShowWorkWeekOnly = !ShowWorkWeekOnly;
         UpdateDays();
         OnPropertyChanged(nameof(PeriodTitle));
     }

@@ -6,6 +6,26 @@ using System.Windows.Data;
 namespace OutlookCalendar.Converters;
 
 /// <summary>
+/// Инвертирует булево значение.
+/// </summary>
+public class InverseBoolConverter : IValueConverter
+{
+    public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        if (value is bool b)
+            return !b;
+        return value;
+    }
+
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        if (value is bool b)
+            return !b;
+        return value;
+    }
+}
+
+/// <summary>
 /// Преобразует строку в Visibility (пустая строка = Collapsed).
 /// </summary>
 public class StringToVisibilityConverter : IValueConverter

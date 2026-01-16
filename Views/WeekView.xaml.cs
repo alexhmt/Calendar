@@ -185,4 +185,28 @@ public partial class WeekView : UserControl
         _dragGhost = null;
         _dragCanvas = null;
     }
+
+    /// <summary>
+    /// Обработка двойного клика на пустом месте для создания события.
+    /// </summary>
+    private void DayGrid_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        if (e.ClickCount == 2 && sender is FrameworkElement element)
+        {
+            // Получаем дату дня из DataContext
+            if (element.DataContext is DayViewModel dayVm)
+            {
+                var position = e.GetPosition(element);
+                var newTime = CalculateTimeFromPosition(position.Y, dayVm.Date);
+
+                // Вызываем команду создания события
+                if (DataContext is WeekViewModel vm)
+                {
+                    vm.CreateEventDialogCommand.Execute(newTime);
+                }
+
+                e.Handled = true;
+            }
+        }
+    }
 }

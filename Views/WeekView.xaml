@@ -26,6 +26,7 @@
         </LinearGradientBrush>
 
         <!-- Конвертеры -->
+        <converters:InverseBoolConverter x:Key="InverseBoolConverter"/>
         <converters:TimeToCanvasTopConverter x:Key="TimeToCanvasTopConverter"/>
         <converters:EventDurationToHeightConverter x:Key="DurationToHeightConverter"/>
         <converters:WidthFractionToWidthConverter x:Key="WidthFractionConverter"/>
@@ -69,13 +70,12 @@
                 <Separator Margin="15,0"/>
 
                 <RadioButton Content="Показывать рабочую неделю"
-                             IsChecked="{Binding ShowWorkWeekOnly}"
+                             IsChecked="{Binding ShowWorkWeekOnly, Mode=TwoWay}"
                              Margin="0,0,10,0"
-                             GroupName="WeekMode"
-                             Command="{Binding ToggleWeekModeCommand}"/>
+                             GroupName="WeekMode"/>
                 <RadioButton Content="Показывать полную неделю"
-                             GroupName="WeekMode"
-                             Command="{Binding ToggleWeekModeCommand}"/>
+                             IsChecked="{Binding ShowWorkWeekOnly, Mode=TwoWay, Converter={StaticResource InverseBoolConverter}}"
+                             GroupName="WeekMode"/>
             </StackPanel>
         </Border>
         
@@ -224,7 +224,8 @@
                         </ItemsControl.ItemsPanel>
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
-                                <Grid>
+                                <Grid Background="Transparent"
+                                      MouseLeftButtonDown="DayGrid_MouseLeftButtonDown">
                                     <!-- Фон с сеткой -->
                                     <ItemsControl ItemsSource="{Binding DataContext.Hours, RelativeSource={RelativeSource AncestorType=UserControl}}">
                                         <ItemsControl.ItemsPanel>
