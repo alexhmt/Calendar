@@ -201,6 +201,123 @@ private double _hourHeight = 60.0;  // Высота часового слота 
 </ResourceDictionary.MergedDictionaries>
 ```
 
+## Использование в VB.NET
+
+### 1. Добавление ссылки на проект
+
+Добавьте ссылку на скомпилированную DLL `OutlookCalendar.dll` или на проект C#.
+
+### 2. Создание MainWindow.xaml
+
+```xml
+<Window x:Class="MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:calendar="clr-namespace:OutlookCalendar.Views;assembly=OutlookCalendar"
+        xmlns:vm="clr-namespace:OutlookCalendar.ViewModels;assembly=OutlookCalendar"
+        Title="Календарь VB.NET" Height="700" Width="1000">
+
+    <Window.DataContext>
+        <vm:WeekViewModel/>
+    </Window.DataContext>
+
+    <Grid>
+        <calendar:WeekView/>
+    </Grid>
+</Window>
+```
+
+### 3. Работа с событиями в VB.NET
+
+```vb
+Imports OutlookCalendar.Models
+Imports OutlookCalendar.ViewModels
+
+Class MainWindow
+    Private ReadOnly _viewModel As WeekViewModel
+
+    Public Sub New()
+        InitializeComponent()
+        _viewModel = CType(DataContext, WeekViewModel)
+    End Sub
+
+    ' Добавление события программно
+    Private Sub AddEvent_Click(sender As Object, e As RoutedEventArgs)
+        Dim newEvent As New CalendarEvent() With {
+            .Id = Guid.NewGuid(),
+            .Title = "Встреча",
+            .Description = "Описание встречи",
+            .StartTime = DateTime.Today.AddHours(10),
+            .EndTime = DateTime.Today.AddHours(11),
+            .Category = EventCategory.Meeting
+        }
+
+        _viewModel.AddEvent(newEvent)
+    End Sub
+
+    ' Удаление выбранного события
+    Private Sub DeleteSelected_Click(sender As Object, e As RoutedEventArgs)
+        If _viewModel.SelectedEvent IsNot Nothing Then
+            _viewModel.DeleteEventCommand.Execute(_viewModel.SelectedEvent)
+        End If
+    End Sub
+
+    ' Переход к определённой дате
+    Private Sub GoToDate(targetDate As DateTime)
+        _viewModel.GoToTodayCommand.Execute(Nothing)
+        ' Или используйте навигацию:
+        ' _viewModel.NextWeekCommand.Execute(Nothing)
+        ' _viewModel.PreviousWeekCommand.Execute(Nothing)
+    End Sub
+End Class
+```
+
+### 4. Подписка на изменения
+
+```vb
+Imports System.ComponentModel
+
+Class MainWindow
+    Private WithEvents _viewModel As WeekViewModel
+
+    Public Sub New()
+        InitializeComponent()
+        _viewModel = CType(DataContext, WeekViewModel)
+        AddHandler _viewModel.PropertyChanged, AddressOf ViewModel_PropertyChanged
+    End Sub
+
+    Private Sub ViewModel_PropertyChanged(sender As Object, e As PropertyChangedEventArgs)
+        Select Case e.PropertyName
+            Case NameOf(WeekViewModel.SelectedEvent)
+                ' Реакция на выбор события
+                If _viewModel.SelectedEvent IsNot Nothing Then
+                    Console.WriteLine($"Выбрано: {_viewModel.SelectedEvent.Title}")
+                End If
+            Case NameOf(WeekViewModel.ViewMode)
+                ' Реакция на смену режима просмотра
+                Console.WriteLine($"Режим: {_viewModel.ViewMode}")
+        End Select
+    End Sub
+End Class
+```
+
+### 5. Файл проекта (.vbproj)
+
+```xml
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <RootNamespace>CalendarVBApp</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\OutlookCalendar\OutlookCalendar.csproj" />
+  </ItemGroup>
+</Project>
+```
+
 ## Лицензия
 
 MIT License
