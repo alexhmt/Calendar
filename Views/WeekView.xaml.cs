@@ -16,15 +16,20 @@ namespace OutlookCalendar.Views;
 public partial class WeekView : UserControl
 {
     private bool _isDragging;
+    private bool _isResizing;
     private Point _dragStartPoint;
     private double _dragStartY;
     private double _dragStartX;
     private int _originalDayIndex;
     private EventLayoutInfo? _draggingLayoutInfo;
+    private EventLayoutInfo? _resizingLayoutInfo;
     private CalendarEvent? _draggingAllDayEvent;
     private Rectangle? _dragGhost;
     private FrameworkElement? _dragSourceElement;
     private DateTime _originalStartTime;
+    private DateTime _originalEndTime;
+    private double _originalGhostHeight;
+    private double _originalGhostTop;
 
     private const double HourHeight = 60.0;
     private const int StartHour = 8;
@@ -347,6 +352,306 @@ public partial class WeekView : UserControl
         Canvas.SetLeft(_dragGhost, sourcePos.X);
 
         DragOverlayCanvas.Children.Add(_dragGhost);
+    }
+
+    #endregion
+
+    #region Event Resize (Bottom Edge)
+
+    /// <summary>
+    /// Начало изменения размера события (нижний край).
+    /// </summary>
+    public void ResizeBottomHandle_PreviewMouseDown(object sender, MouseButtonEventArgs e)
+    {
+        if (e.LeftButton == MouseButtonState.Pressed &&
+            sender is FrameworkElement element)
+        {
+            var parent = element.Parent as Grid;
+            if (parent?.DataContext is EventLayoutInfo layoutInfo)
+            {
+                _dragStartPoint = e.GetPosition(this);
+                _dragStartY = e.GetPosition(DragOverlayCanvas).Y;
+                _resizingLayoutInfo = layoutInfo;
+                _originalEndTime = layoutInfo.Event.EndTime;
+                _originalStartTime = layoutInfo.Event.StartTime;
+                element.CaptureMouse();
+                e.Handled = true;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Обработка движения мыши при изменении размера (нижний край).
+    /// </summary>
+    public void ResizeBottomHandle_MouseMove(object sender, MouseEventArgs e)
+    {
+        if (e.LeftButton != MouseButtonState.Pressed || _resizingLayoutInfo == null)
+            return;
+
+        var currentPos = e.GetPosition(this);
+        var diff = currentPos - _dragStartPoint;
+
+        if (!_isResizing && Math.Abs(diff.Y) > 3)
+        {
+            _isResizing = true;
+            _dragSourceElement = sender as FrameworkElement;
+            CreateResizeGhost();
+        }
+
+        if (_isResizing && _dragGhost != null)
+        {
+            var canvasPos = e.GetPosition(DragOverlayCanvas);
+            _dragGhost.Height = _originalGhostHeight + (canvasPos.Y - _dragStartY);
+            if (_dragGhost.Height < 15) _dragGhost.Height = 15;
+        }
+
+        e.Handled = true;
+    }
+
+    /// <summary>
+    /// Завершение изменения размера (нижний край).
+    /// </summary>
+    public void ResizeBottomHandle_PreviewMouseUp(object sender, MouseButtonEventArgs e)
+    {
+        if (sender is FrameworkElement element)
+        {
+            element.ReleaseMouseCapture();
+        }
+
+        if (_isResizing && _resizingLayoutInfo != null && DataContext is WeekViewModel vm)
+        {
+            var dropPos = e.GetPosition(DragOverlayCanvas);
+            var deltaY = dropPos.Y - _dragStartY;
+            var deltaMinutes = (int)(deltaY / HourHeight * 60);
+            deltaMinutes = (deltaMinutes / 15) * 15;
+
+            var evt = _resizingLayoutInfo.Event;
+            var newEndTime = _originalEndTime.AddMinutes(deltaMinutes);
+
+            // Минимальная длительность - 15 минут
+            if (newEndTime <= evt.StartTime.AddMinutes(15))
+            {
+                newEndTime = evt.StartTime.AddMinutes(15);
+            }
+
+            // Ограничиваем временем в тот же день (не позже 23:59)
+            var maxTime = evt.StartTime.Date.AddHours(23).AddMinutes(59);
+            if (newEndTime > maxTime)
+            {
+                newEndTime = maxTime;
+            }
+
+            evt.EndTime = newEndTime;
+            vm.RefreshView();
+        }
+
+        CleanupResize();
+        e.Handled = true;
+    }
+
+    /// <summary>
+    /// Отмена изменения размера (нижний край).
+    /// </summary>
+    public void ResizeBottomHandle_LostMouseCapture(object sender, MouseEventArgs e)
+    {
+        // Очистка происходит в PreviewMouseUp
+    }
+
+    #endregion
+
+    #region Event Resize (Top Edge)
+
+    /// <summary>
+    /// Начало изменения размера события (верхний край).
+    /// </summary>
+    public void ResizeTopHandle_PreviewMouseDown(object sender, MouseButtonEventArgs e)
+    {
+        if (e.LeftButton == MouseButtonState.Pressed &&
+            sender is FrameworkElement element)
+        {
+            var parent = element.Parent as Grid;
+            if (parent?.DataContext is EventLayoutInfo layoutInfo)
+            {
+                _dragStartPoint = e.GetPosition(this);
+                _dragStartY = e.GetPosition(DragOverlayCanvas).Y;
+                _resizingLayoutInfo = layoutInfo;
+                _originalStartTime = layoutInfo.Event.StartTime;
+                _originalEndTime = layoutInfo.Event.EndTime;
+                element.CaptureMouse();
+                e.Handled = true;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Обработка движения мыши при изменении размера (верхний край).
+    /// </summary>
+    public void ResizeTopHandle_MouseMove(object sender, MouseEventArgs e)
+    {
+        if (e.LeftButton != MouseButtonState.Pressed || _resizingLayoutInfo == null)
+            return;
+
+        var currentPos = e.GetPosition(this);
+        var diff = currentPos - _dragStartPoint;
+
+        if (!_isResizing && Math.Abs(diff.Y) > 3)
+        {
+            _isResizing = true;
+            _dragSourceElement = sender as FrameworkElement;
+            CreateResizeGhostForTop();
+        }
+
+        if (_isResizing && _dragGhost != null)
+        {
+            var canvasPos = e.GetPosition(DragOverlayCanvas);
+            var deltaY = canvasPos.Y - _dragStartY;
+
+            // При перетаскивании верха меняем и позицию, и высоту
+            var newTop = _originalGhostTop + deltaY;
+            var newHeight = _originalGhostHeight - deltaY;
+
+            if (newHeight >= 15)
+            {
+                Canvas.SetTop(_dragGhost, newTop);
+                _dragGhost.Height = newHeight;
+            }
+        }
+
+        e.Handled = true;
+    }
+
+    /// <summary>
+    /// Завершение изменения размера (верхний край).
+    /// </summary>
+    public void ResizeTopHandle_PreviewMouseUp(object sender, MouseButtonEventArgs e)
+    {
+        if (sender is FrameworkElement element)
+        {
+            element.ReleaseMouseCapture();
+        }
+
+        if (_isResizing && _resizingLayoutInfo != null && DataContext is WeekViewModel vm)
+        {
+            var dropPos = e.GetPosition(DragOverlayCanvas);
+            var deltaY = dropPos.Y - _dragStartY;
+            var deltaMinutes = (int)(deltaY / HourHeight * 60);
+            deltaMinutes = (deltaMinutes / 15) * 15;
+
+            var evt = _resizingLayoutInfo.Event;
+            var newStartTime = _originalStartTime.AddMinutes(deltaMinutes);
+
+            // Минимальная длительность - 15 минут
+            if (newStartTime >= evt.EndTime.AddMinutes(-15))
+            {
+                newStartTime = evt.EndTime.AddMinutes(-15);
+            }
+
+            // Ограничиваем временем не раньше 8:00
+            var minTime = evt.StartTime.Date.AddHours(StartHour);
+            if (newStartTime < minTime)
+            {
+                newStartTime = minTime;
+            }
+
+            evt.StartTime = newStartTime;
+            vm.RefreshView();
+        }
+
+        CleanupResize();
+        e.Handled = true;
+    }
+
+    /// <summary>
+    /// Отмена изменения размера (верхний край).
+    /// </summary>
+    public void ResizeTopHandle_LostMouseCapture(object sender, MouseEventArgs e)
+    {
+        // Очистка происходит в PreviewMouseUp
+    }
+
+    /// <summary>
+    /// Создаёт визуальный призрак для изменения размера (верхний край).
+    /// </summary>
+    private void CreateResizeGhostForTop()
+    {
+        if (_resizingLayoutInfo == null) return;
+
+        var eventGrid = _dragSourceElement?.Parent as Grid;
+        if (eventGrid == null) return;
+
+        _originalGhostHeight = eventGrid.ActualHeight;
+        var sourcePos = eventGrid.TranslatePoint(new Point(0, 0), DragOverlayCanvas);
+        _originalGhostTop = sourcePos.Y;
+
+        _dragGhost = new Rectangle
+        {
+            Width = eventGrid.ActualWidth,
+            Height = eventGrid.ActualHeight,
+            Fill = new SolidColorBrush(Color.FromArgb(128, 100, 149, 237)),
+            Stroke = new SolidColorBrush(Colors.CornflowerBlue),
+            StrokeThickness = 2,
+            StrokeDashArray = new DoubleCollection { 4, 2 },
+            RadiusX = 3,
+            RadiusY = 3,
+            IsHitTestVisible = false
+        };
+
+        Canvas.SetTop(_dragGhost, sourcePos.Y);
+        Canvas.SetLeft(_dragGhost, sourcePos.X);
+
+        DragOverlayCanvas.Children.Add(_dragGhost);
+    }
+
+    #endregion
+
+    #region Resize Helpers
+
+    /// <summary>
+    /// Создаёт визуальный призрак для изменения размера (нижний край).
+    /// </summary>
+    private void CreateResizeGhost()
+    {
+        if (_resizingLayoutInfo == null) return;
+
+        var eventGrid = _dragSourceElement?.Parent as Grid;
+        if (eventGrid == null) return;
+
+        _originalGhostHeight = eventGrid.ActualHeight;
+
+        _dragGhost = new Rectangle
+        {
+            Width = eventGrid.ActualWidth,
+            Height = eventGrid.ActualHeight,
+            Fill = new SolidColorBrush(Color.FromArgb(128, 100, 149, 237)),
+            Stroke = new SolidColorBrush(Colors.CornflowerBlue),
+            StrokeThickness = 2,
+            StrokeDashArray = new DoubleCollection { 4, 2 },
+            RadiusX = 3,
+            RadiusY = 3,
+            IsHitTestVisible = false
+        };
+
+        var sourcePos = eventGrid.TranslatePoint(new Point(0, 0), DragOverlayCanvas);
+        Canvas.SetTop(_dragGhost, sourcePos.Y);
+        Canvas.SetLeft(_dragGhost, sourcePos.X);
+
+        DragOverlayCanvas.Children.Add(_dragGhost);
+    }
+
+    /// <summary>
+    /// Очищает состояние изменения размера.
+    /// </summary>
+    private void CleanupResize()
+    {
+        if (_dragGhost != null)
+        {
+            DragOverlayCanvas.Children.Remove(_dragGhost);
+        }
+
+        _isResizing = false;
+        _resizingLayoutInfo = null;
+        _dragGhost = null;
+        _dragSourceElement = null;
     }
 
     #endregion

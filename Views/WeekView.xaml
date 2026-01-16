@@ -325,73 +325,103 @@
                                         </ItemsControl.ItemContainerStyle>
                                         <ItemsControl.ItemTemplate>
                                             <DataTemplate>
-                                                <Border CornerRadius="3"
-                                                        Padding="4,2"
-                                                        Margin="0,0,2,0"
-                                                        Cursor="Hand"
-                                                        behaviors:DoubleClickBehavior.Command="{Binding DataContext.EditEventCommand,
-                                                            RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                                        behaviors:DoubleClickBehavior.CommandParameter="{Binding Event}"
-                                                        PreviewMouseDown="EventBorder_PreviewMouseDown"
-                                                        MouseMove="EventBorder_MouseMove"
-                                                        PreviewMouseUp="EventBorder_PreviewMouseUp"
-                                                        LostMouseCapture="EventBorder_LostMouseCapture">
-                                                    <Border.Width>
+                                                <Grid Margin="0,0,2,0">
+                                                    <Grid.Width>
                                                         <MultiBinding Converter="{StaticResource WidthFractionConverter}">
                                                             <Binding Path="WidthFraction"/>
                                                             <Binding Path="ActualWidth"
                                                                      RelativeSource="{RelativeSource AncestorType=ItemsControl}"/>
                                                         </MultiBinding>
-                                                    </Border.Width>
-                                                    <Border.Height>
+                                                    </Grid.Width>
+                                                    <Grid.Height>
                                                         <MultiBinding Converter="{StaticResource DurationToHeightConverter}">
                                                             <Binding Path="Event.StartTime"/>
                                                             <Binding Path="Event.EndTime"/>
                                                         </MultiBinding>
-                                                    </Border.Height>
-                                                    <Border.Style>
-                                                        <Style TargetType="Border">
-                                                            <Setter Property="Background" Value="#90EE90"/>
-                                                            <Style.Triggers>
-                                                                <DataTrigger Binding="{Binding Event.Category}" Value="Important">
-                                                                    <Setter Property="Background" Value="#FF6347"/>
-                                                                </DataTrigger>
-                                                                <DataTrigger Binding="{Binding Event.Category}" Value="Business">
-                                                                    <Setter Property="Background" Value="#6495ED"/>
-                                                                </DataTrigger>
-                                                                <DataTrigger Binding="{Binding Event.Category}" Value="Meeting">
-                                                                    <Setter Property="Background" Value="#FFFF96"/>
-                                                                </DataTrigger>
-                                                                <DataTrigger Binding="{Binding Event.Category}" Value="Travel">
-                                                                    <Setter Property="Background" Value="#ADD8E6"/>
-                                                                </DataTrigger>
-                                                                <DataTrigger Binding="{Binding Event.Category}" Value="Holiday">
-                                                                    <Setter Property="Background" Value="#FFA500"/>
-                                                                </DataTrigger>
-                                                            </Style.Triggers>
-                                                        </Style>
-                                                    </Border.Style>
-                                                    <StackPanel>
-                                                        <TextBlock Text="{Binding Event.Title}"
-                                                                   FontWeight="SemiBold"
-                                                                   FontSize="11"
-                                                                   TextWrapping="Wrap"
-                                                                   Foreground="#333"/>
-                                                        <TextBlock FontSize="10" Foreground="#555">
-                                                            <Run Text="{Binding Event.StartTime, StringFormat='{}{0:HH:mm}', Mode=OneWay}"/>
-                                                            <Run Text=" - "/>
-                                                            <Run Text="{Binding Event.EndTime, StringFormat='{}{0:HH:mm}', Mode=OneWay}"/>
-                                                        </TextBlock>
-                                                        <TextBlock Text="{Binding Event.Description}"
-                                                                   FontSize="10"
-                                                                   FontStyle="Italic"
-                                                                   Foreground="#555"
-                                                                   TextWrapping="Wrap"
-                                                                   Visibility="{Binding Event.Description,
-                                                                       Converter={StaticResource StringToVisibilityConverter},
-                                                                       FallbackValue=Collapsed}"/>
-                                                    </StackPanel>
-                                                </Border>
+                                                    </Grid.Height>
+                                                    <Grid.RowDefinitions>
+                                                        <RowDefinition Height="6"/>
+                                                        <RowDefinition Height="*"/>
+                                                        <RowDefinition Height="6"/>
+                                                    </Grid.RowDefinitions>
+
+                                                    <!-- Основное содержимое события -->
+                                                    <Border Grid.Row="0"
+                                                            Grid.RowSpan="3"
+                                                            CornerRadius="3"
+                                                            Padding="4,8,4,8"
+                                                            Cursor="Hand"
+                                                            behaviors:DoubleClickBehavior.Command="{Binding DataContext.EditEventCommand,
+                                                                RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                            behaviors:DoubleClickBehavior.CommandParameter="{Binding Event}"
+                                                            PreviewMouseDown="EventBorder_PreviewMouseDown"
+                                                            MouseMove="EventBorder_MouseMove"
+                                                            PreviewMouseUp="EventBorder_PreviewMouseUp"
+                                                            LostMouseCapture="EventBorder_LostMouseCapture">
+                                                        <Border.Style>
+                                                            <Style TargetType="Border">
+                                                                <Setter Property="Background" Value="#90EE90"/>
+                                                                <Style.Triggers>
+                                                                    <DataTrigger Binding="{Binding Event.Category}" Value="Important">
+                                                                        <Setter Property="Background" Value="#FF6347"/>
+                                                                    </DataTrigger>
+                                                                    <DataTrigger Binding="{Binding Event.Category}" Value="Business">
+                                                                        <Setter Property="Background" Value="#6495ED"/>
+                                                                    </DataTrigger>
+                                                                    <DataTrigger Binding="{Binding Event.Category}" Value="Meeting">
+                                                                        <Setter Property="Background" Value="#FFFF96"/>
+                                                                    </DataTrigger>
+                                                                    <DataTrigger Binding="{Binding Event.Category}" Value="Travel">
+                                                                        <Setter Property="Background" Value="#ADD8E6"/>
+                                                                    </DataTrigger>
+                                                                    <DataTrigger Binding="{Binding Event.Category}" Value="Holiday">
+                                                                        <Setter Property="Background" Value="#FFA500"/>
+                                                                    </DataTrigger>
+                                                                </Style.Triggers>
+                                                            </Style>
+                                                        </Border.Style>
+                                                        <StackPanel>
+                                                            <TextBlock Text="{Binding Event.Title}"
+                                                                       FontWeight="SemiBold"
+                                                                       FontSize="11"
+                                                                       TextWrapping="Wrap"
+                                                                       Foreground="#333"/>
+                                                            <TextBlock FontSize="10" Foreground="#555">
+                                                                <Run Text="{Binding Event.StartTime, StringFormat='{}{0:HH:mm}', Mode=OneWay}"/>
+                                                                <Run Text=" - "/>
+                                                                <Run Text="{Binding Event.EndTime, StringFormat='{}{0:HH:mm}', Mode=OneWay}"/>
+                                                            </TextBlock>
+                                                            <TextBlock Text="{Binding Event.Description}"
+                                                                       FontSize="10"
+                                                                       FontStyle="Italic"
+                                                                       Foreground="#555"
+                                                                       TextWrapping="Wrap"
+                                                                       Visibility="{Binding Event.Description,
+                                                                           Converter={StaticResource StringToVisibilityConverter},
+                                                                           FallbackValue=Collapsed}"/>
+                                                        </StackPanel>
+                                                    </Border>
+
+                                                    <!-- Ручка изменения размера (верхний край) -->
+                                                    <Border Grid.Row="0"
+                                                            Background="Transparent"
+                                                            Cursor="SizeNS"
+                                                            Panel.ZIndex="10"
+                                                            PreviewMouseDown="ResizeTopHandle_PreviewMouseDown"
+                                                            MouseMove="ResizeTopHandle_MouseMove"
+                                                            PreviewMouseUp="ResizeTopHandle_PreviewMouseUp"
+                                                            LostMouseCapture="ResizeTopHandle_LostMouseCapture"/>
+
+                                                    <!-- Ручка изменения размера (нижний край) -->
+                                                    <Border Grid.Row="2"
+                                                            Background="Transparent"
+                                                            Cursor="SizeNS"
+                                                            Panel.ZIndex="10"
+                                                            PreviewMouseDown="ResizeBottomHandle_PreviewMouseDown"
+                                                            MouseMove="ResizeBottomHandle_MouseMove"
+                                                            PreviewMouseUp="ResizeBottomHandle_PreviewMouseUp"
+                                                            LostMouseCapture="ResizeBottomHandle_LostMouseCapture"/>
+                                                </Grid>
                                             </DataTemplate>
                                         </ItemsControl.ItemTemplate>
                                     </ItemsControl>
