@@ -5,11 +5,15 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:converters="clr-namespace:OutlookCalendar.Converters"
              xmlns:behaviors="clr-namespace:OutlookCalendar.Behaviors"
+             xmlns:helpers="clr-namespace:OutlookCalendar.Helpers"
              xmlns:vm="clr-namespace:OutlookCalendar.ViewModels"
              mc:Ignorable="d"
              d:DesignHeight="700" d:DesignWidth="900">
 
     <UserControl.Resources>
+        <!-- Прокси для привязки DataContext в ContextMenu -->
+        <helpers:BindingProxy x:Key="Proxy" Data="{Binding}"/>
+
         <!-- Цвета -->
         <SolidColorBrush x:Key="BorderGray" Color="#A5ACB5"/>
         <SolidColorBrush x:Key="GridLine" Color="#D4D4D4"/>
@@ -32,6 +36,7 @@
         <converters:WidthFractionToWidthConverter x:Key="WidthFractionConverter"/>
         <converters:LeftFractionToLeftConverter x:Key="LeftFractionConverter"/>
         <converters:StringToVisibilityConverter x:Key="StringToVisibilityConverter"/>
+        <converters:EqualityToVisibilityConverter x:Key="EqualityToVisibilityConverter"/>
     </UserControl.Resources>
     
     <Grid Background="#F0F0F0">
@@ -189,41 +194,75 @@
                                 <ItemsControl ItemsSource="{Binding AllDayEvents}">
                                     <ItemsControl.ItemTemplate>
                                         <DataTemplate>
-                                            <Border CornerRadius="2"
-                                                    Padding="4,2"
-                                                    Margin="0,1"
-                                                    Cursor="Hand"
-                                                    behaviors:DoubleClickBehavior.Command="{Binding DataContext.EditEventCommand,
-                                                        RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                                    behaviors:DoubleClickBehavior.CommandParameter="{Binding}"
-                                                    PreviewMouseDown="AllDayEvent_PreviewMouseDown"
-                                                    MouseMove="AllDayEvent_MouseMove"
-                                                    PreviewMouseUp="AllDayEvent_PreviewMouseUp"
-                                                    LostMouseCapture="AllDayEvent_LostMouseCapture">
-                                                <Border.Style>
-                                                    <Style TargetType="Border">
-                                                        <Setter Property="Background" Value="#E6E6FA"/>
-                                                        <Style.Triggers>
-                                                            <DataTrigger Binding="{Binding Category}" Value="Important">
-                                                                <Setter Property="Background" Value="#FF6347"/>
-                                                            </DataTrigger>
-                                                            <DataTrigger Binding="{Binding Category}" Value="Business">
-                                                                <Setter Property="Background" Value="#6495ED"/>
-                                                            </DataTrigger>
-                                                            <DataTrigger Binding="{Binding Category}" Value="Holiday">
-                                                                <Setter Property="Background" Value="#FFA500"/>
-                                                            </DataTrigger>
-                                                            <DataTrigger Binding="{Binding Category}" Value="Personal">
-                                                                <Setter Property="Background" Value="#90EE90"/>
-                                                            </DataTrigger>
-                                                        </Style.Triggers>
-                                                    </Style>
-                                                </Border.Style>
-                                                <TextBlock Text="{Binding Title}"
-                                                           FontWeight="SemiBold"
-                                                           FontSize="10"
-                                                           TextTrimming="CharacterEllipsis"/>
-                                            </Border>
+                                            <Grid Margin="0,1"
+                                                  MouseLeftButtonDown="AllDayEvent_SelectionClick">
+                                                <Grid.ContextMenu>
+                                                    <ContextMenu>
+                                                        <MenuItem Header="Копировать"
+                                                                  Command="{Binding Data.CopyEventCommand, Source={StaticResource Proxy}}"
+                                                                  CommandParameter="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}"/>
+                                                        <MenuItem Header="Вырезать"
+                                                                  Command="{Binding Data.CutEventCommand, Source={StaticResource Proxy}}"
+                                                                  CommandParameter="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}"/>
+                                                        <MenuItem Header="Вставить"
+                                                                  Command="{Binding Data.PasteEventCommand, Source={StaticResource Proxy}}"
+                                                                  CommandParameter="{Binding PlacementTarget.DataContext.StartTime, RelativeSource={RelativeSource AncestorType=ContextMenu}}"/>
+                                                        <Separator/>
+                                                        <MenuItem Header="Удалить"
+                                                                  Command="{Binding Data.DeleteEventCommand, Source={StaticResource Proxy}}"
+                                                                  CommandParameter="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}"/>
+                                                    </ContextMenu>
+                                                </Grid.ContextMenu>
+
+                                                <!-- Рамка выделения -->
+                                                <Border BorderBrush="#0078D7"
+                                                        BorderThickness="2"
+                                                        CornerRadius="2"
+                                                        IsHitTestVisible="False"
+                                                        Panel.ZIndex="5">
+                                                    <Border.Visibility>
+                                                        <MultiBinding Converter="{StaticResource EqualityToVisibilityConverter}">
+                                                            <Binding/>
+                                                            <Binding Path="DataContext.SelectedEvent" RelativeSource="{RelativeSource AncestorType=UserControl}"/>
+                                                        </MultiBinding>
+                                                    </Border.Visibility>
+                                                </Border>
+
+                                                <Border CornerRadius="2"
+                                                        Padding="4,2"
+                                                        Cursor="Hand"
+                                                        behaviors:DoubleClickBehavior.Command="{Binding DataContext.EditEventCommand,
+                                                            RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                        behaviors:DoubleClickBehavior.CommandParameter="{Binding}"
+                                                        PreviewMouseDown="AllDayEvent_PreviewMouseDown"
+                                                        MouseMove="AllDayEvent_MouseMove"
+                                                        PreviewMouseUp="AllDayEvent_PreviewMouseUp"
+                                                        LostMouseCapture="AllDayEvent_LostMouseCapture">
+                                                    <Border.Style>
+                                                        <Style TargetType="Border">
+                                                            <Setter Property="Background" Value="#E6E6FA"/>
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding Category}" Value="Important">
+                                                                    <Setter Property="Background" Value="#FF6347"/>
+                                                                </DataTrigger>
+                                                                <DataTrigger Binding="{Binding Category}" Value="Business">
+                                                                    <Setter Property="Background" Value="#6495ED"/>
+                                                                </DataTrigger>
+                                                                <DataTrigger Binding="{Binding Category}" Value="Holiday">
+                                                                    <Setter Property="Background" Value="#FFA500"/>
+                                                                </DataTrigger>
+                                                                <DataTrigger Binding="{Binding Category}" Value="Personal">
+                                                                    <Setter Property="Background" Value="#90EE90"/>
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </Border.Style>
+                                                    <TextBlock Text="{Binding Title}"
+                                                               FontWeight="SemiBold"
+                                                               FontSize="10"
+                                                               TextTrimming="CharacterEllipsis"/>
+                                                </Border>
+                                            </Grid>
                                         </DataTemplate>
                                     </ItemsControl.ItemTemplate>
                                 </ItemsControl>
@@ -276,7 +315,19 @@
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
                                 <Grid Background="Transparent"
-                                      MouseLeftButtonDown="DayGrid_MouseLeftButtonDown">
+                                      MouseLeftButtonDown="DayGrid_MouseLeftButtonDown"
+                                      MouseRightButtonDown="DayGrid_MouseRightButtonDown">
+                                    <Grid.ContextMenu>
+                                        <ContextMenu x:Name="DayContextMenu">
+                                            <MenuItem Header="Вставить"
+                                                      Command="{Binding Data.PasteEventCommand, Source={StaticResource Proxy}}"
+                                                      Click="PasteMenuItem_Click"/>
+                                            <Separator/>
+                                            <MenuItem Header="Создать событие"
+                                                      Command="{Binding Data.CreateEventDialogCommand, Source={StaticResource Proxy}}"
+                                                      Click="CreateEventMenuItem_Click"/>
+                                        </ContextMenu>
+                                    </Grid.ContextMenu>
                                     <!-- Фон с сеткой -->
                                     <ItemsControl ItemsSource="{Binding DataContext.Hours, RelativeSource={RelativeSource AncestorType=UserControl}}">
                                         <ItemsControl.ItemsPanel>
@@ -325,7 +376,8 @@
                                         </ItemsControl.ItemContainerStyle>
                                         <ItemsControl.ItemTemplate>
                                             <DataTemplate>
-                                                <Grid Margin="0,0,2,0">
+                                                <Grid Margin="0,0,2,0"
+                                                      MouseLeftButtonDown="Event_MouseLeftButtonDown">
                                                     <Grid.Width>
                                                         <MultiBinding Converter="{StaticResource WidthFractionConverter}">
                                                             <Binding Path="WidthFraction"/>
@@ -344,6 +396,39 @@
                                                         <RowDefinition Height="*"/>
                                                         <RowDefinition Height="6"/>
                                                     </Grid.RowDefinitions>
+                                                    <Grid.ContextMenu>
+                                                        <ContextMenu>
+                                                            <MenuItem Header="Копировать"
+                                                                      Command="{Binding Data.CopyEventCommand, Source={StaticResource Proxy}}"
+                                                                      CommandParameter="{Binding PlacementTarget.DataContext.Event, RelativeSource={RelativeSource AncestorType=ContextMenu}}"/>
+                                                            <MenuItem Header="Вырезать"
+                                                                      Command="{Binding Data.CutEventCommand, Source={StaticResource Proxy}}"
+                                                                      CommandParameter="{Binding PlacementTarget.DataContext.Event, RelativeSource={RelativeSource AncestorType=ContextMenu}}"/>
+                                                            <MenuItem Header="Вставить"
+                                                                      Command="{Binding Data.PasteEventCommand, Source={StaticResource Proxy}}"
+                                                                      CommandParameter="{Binding PlacementTarget.DataContext.Event.StartTime, RelativeSource={RelativeSource AncestorType=ContextMenu}}"/>
+                                                            <Separator/>
+                                                            <MenuItem Header="Удалить"
+                                                                      Command="{Binding Data.DeleteEventCommand, Source={StaticResource Proxy}}"
+                                                                      CommandParameter="{Binding PlacementTarget.DataContext.Event, RelativeSource={RelativeSource AncestorType=ContextMenu}}"/>
+                                                        </ContextMenu>
+                                                    </Grid.ContextMenu>
+
+                                                    <!-- Рамка выделения -->
+                                                    <Border Grid.Row="0"
+                                                            Grid.RowSpan="3"
+                                                            BorderBrush="#0078D7"
+                                                            BorderThickness="2"
+                                                            CornerRadius="3"
+                                                            IsHitTestVisible="False"
+                                                            Panel.ZIndex="5">
+                                                        <Border.Visibility>
+                                                            <MultiBinding Converter="{StaticResource EqualityToVisibilityConverter}">
+                                                                <Binding Path="Event"/>
+                                                                <Binding Path="DataContext.SelectedEvent" RelativeSource="{RelativeSource AncestorType=UserControl}"/>
+                                                            </MultiBinding>
+                                                        </Border.Visibility>
+                                                    </Border>
 
                                                     <!-- Основное содержимое события -->
                                                     <Border Grid.Row="0"

@@ -30,6 +30,7 @@ public partial class WeekView : UserControl
     private DateTime _originalEndTime;
     private double _originalGhostHeight;
     private double _originalGhostTop;
+    private DateTime? _contextMenuTargetTime;
 
     private const double HourHeight = 60.0;
     private const int StartHour = 8;
@@ -657,6 +658,32 @@ public partial class WeekView : UserControl
     #endregion
 
     /// <summary>
+    /// Выделение события по клику.
+    /// </summary>
+    private void Event_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        if (sender is FrameworkElement element &&
+            element.DataContext is EventLayoutInfo layoutInfo &&
+            DataContext is WeekViewModel vm)
+        {
+            vm.SelectEventCommand.Execute(layoutInfo.Event);
+        }
+    }
+
+    /// <summary>
+    /// Выделение AllDay события по клику.
+    /// </summary>
+    private void AllDayEvent_SelectionClick(object sender, MouseButtonEventArgs e)
+    {
+        if (sender is FrameworkElement element &&
+            element.DataContext is CalendarEvent evt &&
+            DataContext is WeekViewModel vm)
+        {
+            vm.SelectEventCommand.Execute(evt);
+        }
+    }
+
+    /// <summary>
     /// Обработка двойного клика на пустом месте для создания события.
     /// </summary>
     private void DayGrid_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
@@ -677,6 +704,42 @@ public partial class WeekView : UserControl
 
                 e.Handled = true;
             }
+        }
+    }
+
+    /// <summary>
+    /// Обработка правого клика для сохранения позиции времени.
+    /// </summary>
+    private void DayGrid_MouseRightButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        if (sender is FrameworkElement element && element.DataContext is DayViewModel dayVm)
+        {
+            var position = e.GetPosition(element);
+            _contextMenuTargetTime = CalculateTimeFromPosition(position.Y, dayVm.Date);
+        }
+    }
+
+    /// <summary>
+    /// Обработка клика на "Вставить" в контекстном меню.
+    /// </summary>
+    private void PasteMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        if (DataContext is WeekViewModel vm && _contextMenuTargetTime.HasValue)
+        {
+            vm.PasteEventCommand.Execute(_contextMenuTargetTime.Value);
+            e.Handled = true;
+        }
+    }
+
+    /// <summary>
+    /// Обработка клика на "Создать событие" в контекстном меню.
+    /// </summary>
+    private void CreateEventMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        if (DataContext is WeekViewModel vm && _contextMenuTargetTime.HasValue)
+        {
+            vm.CreateEventDialogCommand.Execute(_contextMenuTargetTime.Value);
+            e.Handled = true;
         }
     }
 }

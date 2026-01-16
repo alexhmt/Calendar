@@ -144,3 +144,24 @@ public class LeftFractionToLeftConverter : IMultiValueConverter
         throw new NotImplementedException();
     }
 }
+
+/// <summary>
+/// Сравнивает два объекта и возвращает Visibility.
+/// Visible если равны, Collapsed если нет.
+/// </summary>
+public class EqualityToVisibilityConverter : IMultiValueConverter
+{
+    public object Convert(object[] values, Type targetType, object parameter, CultureInfo culture)
+    {
+        if (values.Length >= 2 && values[0] != null && values[1] != null)
+        {
+            return ReferenceEquals(values[0], values[1]) ? Visibility.Visible : Visibility.Collapsed;
+        }
+        return Visibility.Collapsed;
+    }
+
+    public object[] ConvertBack(object value, Type[] targetTypes, object parameter, CultureInfo culture)
+    {
+        throw new NotImplementedException();
+    }
+}

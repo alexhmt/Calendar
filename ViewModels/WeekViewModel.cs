@@ -150,6 +150,8 @@ public partial class MonthDayViewModel : ObservableObject
 public partial class WeekViewModel : ObservableObject
 {
     private readonly List<CalendarEvent> _allEvents = [];
+    private CalendarEvent? _clipboardEvent;
+    private bool _isCutOperation;
 
     private static readonly string DataFilePath = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
@@ -379,6 +381,8 @@ public partial class WeekViewModel : ObservableObject
         if (calendarEvent is null) return;
 
         _allEvents.Remove(calendarEvent);
+        if (SelectedEvent == calendarEvent)
+            SelectedEvent = null;
         UpdateDays();
         SaveData();
     }
@@ -391,6 +395,75 @@ public partial class WeekViewModel : ObservableObject
     {
         SelectedEvent = calendarEvent;
     }
+
+    /// <summary>
+    /// Копирование события в буфер обмена.
+    /// </summary>
+    [RelayCommand]
+    private void CopyEvent(CalendarEvent? calendarEvent)
+    {
+        if (calendarEvent is null) return;
+        _clipboardEvent = calendarEvent;
+        _isCutOperation = false;
+    }
+
+    /// <summary>
+    /// Вырезание события в буфер обмена.
+    /// </summary>
+    [RelayCommand]
+    private void CutEvent(CalendarEvent? calendarEvent)
+    {
+        if (calendarEvent is null) return;
+        _clipboardEvent = calendarEvent;
+        _isCutOperation = true;
+    }
+
+    /// <summary>
+    /// Вставка события из буфера обмена.
+    /// </summary>
+    [RelayCommand]
+    private void PasteEvent(DateTime? targetTime)
+    {
+        if (_clipboardEvent is null) return;
+
+        var pasteTime = targetTime ?? DateTime.Now;
+        var duration = _clipboardEvent.Duration;
+
+        if (_isCutOperation)
+        {
+            // Перемещаем существующее событие
+            _clipboardEvent.StartTime = pasteTime;
+            _clipboardEvent.EndTime = pasteTime + duration;
+            _clipboardEvent = null;
+            _isCutOperation = false;
+        }
+        else
+        {
+            // Создаём копию события
+            var newEvent = new CalendarEvent
+            {
+                Id = Guid.NewGuid(),
+                Title = _clipboardEvent.Title,
+                Description = _clipboardEvent.Description,
+                Location = _clipboardEvent.Location,
+                StartTime = pasteTime,
+                EndTime = pasteTime + duration,
+                IsAllDay = _clipboardEvent.IsAllDay,
+                Category = _clipboardEvent.Category,
+                IsHighPriority = _clipboardEvent.IsHighPriority,
+                Notes = _clipboardEvent.Notes
+            };
+            _allEvents.Add(newEvent);
+        }
+
+        UpdateDays();
+        SaveData();
+    }
+
+    /// <summary>
+    /// Проверяет, есть ли событие в буфере обмена.
+    /// </summary>
+    public bool HasClipboardEvent => _clipboardEvent != null;
 
     /// <summary>
     /// Редактирование события через диалог.
