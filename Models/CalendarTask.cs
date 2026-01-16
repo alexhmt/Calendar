@@ -66,15 +66,25 @@ public partial class CalendarTask : ObservableObject
     /// <summary>
     /// Проверяет, просрочена ли задача.
     /// </summary>
-    public bool IsOverdue => DueDate.HasValue 
-        && DueDate.Value.Date < DateTime.Today 
-        && Status != TaskStatus.Completed 
+    public bool IsOverdue => DueDate.HasValue
+        && DueDate.Value.Date < DateTime.Today
+        && Status != TaskStatus.Completed
         && Status != TaskStatus.Cancelled;
 
     /// <summary>
-    /// Проверяет, выполнена ли задача.
+    /// Проверяет или устанавливает, выполнена ли задача.
     /// </summary>
-    public bool IsCompleted => Status == TaskStatus.Completed;
+    public bool IsCompleted
+    {
+        get => Status == TaskStatus.Completed;
+        set
+        {
+            if (value)
+                MarkComplete();
+            else
+                Reset();
+        }
+    }
 
     /// <summary>
     /// Отмечает задачу как выполненную.

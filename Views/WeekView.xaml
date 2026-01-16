@@ -2,19 +2,26 @@
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
-             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
-             xmlns:vm="clr-namespace:OutlookCalendar.ViewModels"
-             xmlns:controls="clr-namespace:OutlookCalendar.Controls"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:converters="clr-namespace:OutlookCalendar.Converters"
              mc:Ignorable="d" 
-             d:DesignHeight="700" d:DesignWidth="900"
-             d:DataContext="{d:DesignInstance vm:WeekViewModel}">
+             d:DesignHeight="700" d:DesignWidth="900">
     
     <UserControl.Resources>
-        <ResourceDictionary>
-            <ResourceDictionary.MergedDictionaries>
-                <ResourceDictionary Source="/Styles/CalendarStyles.xaml"/>
-            </ResourceDictionary.MergedDictionaries>
-        </ResourceDictionary>
+        <!-- Цвета -->
+        <SolidColorBrush x:Key="BorderGray" Color="#A5ACB5"/>
+        <SolidColorBrush x:Key="GridLine" Color="#D4D4D4"/>
+        
+        <LinearGradientBrush x:Key="HeaderGradient" StartPoint="0,0" EndPoint="0,1">
+            <GradientStop Color="#FFFFFF" Offset="0"/>
+            <GradientStop Color="#CFE4F7" Offset="0.5"/>
+            <GradientStop Color="#B8CCE4" Offset="1"/>
+        </LinearGradientBrush>
+        
+        <LinearGradientBrush x:Key="ToolbarGradient" StartPoint="0,0" EndPoint="0,1">
+            <GradientStop Color="#FEFEFE" Offset="0"/>
+            <GradientStop Color="#ECE9D8" Offset="1"/>
+        </LinearGradientBrush>
     </UserControl.Resources>
     
     <Grid Background="#F0F0F0">
@@ -24,128 +31,44 @@
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="*"/>
-            <ColumnDefinition Width="Auto"/>
-        </Grid.ColumnDefinitions>
         
         <!-- Верхняя панель инструментов -->
-        <Border Grid.Row="0" Grid.ColumnSpan="2"
+        <Border Grid.Row="0"
                 Background="{StaticResource ToolbarGradient}"
-                BorderBrush="{StaticResource OutlookBorderGrayBrush}"
+                BorderBrush="{StaticResource BorderGray}"
                 BorderThickness="0,0,0,1"
                 Padding="8,4">
-            <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="Auto"/>
-                </Grid.ColumnDefinitions>
+            <StackPanel Orientation="Horizontal">
+                <RadioButton Content="День" Margin="0,0,2,0" Padding="10,4" GroupName="View"/>
+                <RadioButton Content="Неделя" IsChecked="True" Margin="0,0,2,0" Padding="10,4" GroupName="View"/>
+                <RadioButton Content="Месяц" Padding="10,4" GroupName="View"/>
                 
-                <!-- Кнопки переключения вида -->
-                <StackPanel Grid.Column="0" Orientation="Horizontal">
-                    <RadioButton Content="День" 
-                                 Style="{StaticResource ViewModeButtonStyle}"
-                                 IsChecked="{Binding ViewMode, Converter={StaticResource BoolToVisibilityConverter}, ConverterParameter=Day}"
-                                 GroupName="ViewMode"/>
-                    <RadioButton Content="Неделя" 
-                                 Style="{StaticResource ViewModeButtonStyle}"
-                                 IsChecked="True"
-                                 GroupName="ViewMode"
-                                 Margin="-1,0,0,0"/>
-                    <RadioButton Content="Месяц" 
-                                 Style="{StaticResource ViewModeButtonStyle}"
-                                 GroupName="ViewMode"
-                                 Margin="-1,0,0,0"/>
-                </StackPanel>
+                <Separator Margin="15,0"/>
                 
-                <!-- Переключатели рабочая/полная неделя -->
-                <StackPanel Grid.Column="1" Orientation="Horizontal" Margin="20,0,0,0">
-                    <RadioButton Content="Показывать рабочую неделю"
-                                 Style="{StaticResource WeekModeRadioStyle}"
-                                 IsChecked="{Binding ShowWorkWeekOnly}"
-                                 GroupName="WeekMode"/>
-                    <RadioButton Content="Показывать полную неделю"
-                                 Style="{StaticResource WeekModeRadioStyle}"
-                                 IsChecked="{Binding ShowWorkWeekOnly, Converter={StaticResource InverseBoolToVisibilityConverter}}"
-                                 GroupName="WeekMode"/>
-                </StackPanel>
-                
-                <!-- Поле поиска -->
-                <StackPanel Grid.Column="3" Orientation="Horizontal">
-                    <TextBox Width="150" 
-                             Style="{StaticResource SearchBoxStyle}"
-                             Text="{Binding SearchQuery, UpdateSourceTrigger=PropertyChanged}">
-                        <TextBox.Style>
-                            <Style TargetType="TextBox" BasedOn="{StaticResource SearchBoxStyle}">
-                                <Style.Triggers>
-                                    <Trigger Property="Text" Value="">
-                                        <Setter Property="Background">
-                                            <Setter.Value>
-                                                <VisualBrush Stretch="None" AlignmentX="Left">
-                                                    <VisualBrush.Visual>
-                                                        <TextBlock Text="Поиск Календарь" 
-                                                                   Foreground="Gray" 
-                                                                   Margin="5,0,0,0"/>
-                                                    </VisualBrush.Visual>
-                                                </VisualBrush>
-                                            </Setter.Value>
-                                        </Setter>
-                                    </Trigger>
-                                </Style.Triggers>
-                            </Style>
-                        </TextBox.Style>
-                    </TextBox>
-                    <ComboBox Width="25" Height="22" Margin="-1,0,0,0"/>
-                </StackPanel>
-            </Grid>
+                <RadioButton Content="Показывать рабочую неделю" IsChecked="{Binding ShowWorkWeekOnly}" Margin="0,0,10,0" GroupName="WeekMode"/>
+                <RadioButton Content="Показывать полную неделю" GroupName="WeekMode"/>
+            </StackPanel>
         </Border>
         
-        <!-- Панель навигации по датам -->
-        <Border Grid.Row="1" Grid.ColumnSpan="2"
+        <!-- Панель навигации -->
+        <Border Grid.Row="1"
                 Background="White"
-                BorderBrush="{StaticResource OutlookBorderGrayBrush}"
+                BorderBrush="{StaticResource BorderGray}"
                 BorderThickness="0,0,0,1"
                 Padding="8,6">
-            <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="*"/>
-                </Grid.ColumnDefinitions>
-                
-                <!-- Кнопки навигации и заголовок периода -->
-                <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
-                    <Button Style="{StaticResource NavButtonStyle}"
-                            Command="{Binding PreviousWeekCommand}"
-                            ToolTip="Предыдущая неделя">
-                        <TextBlock Text="◀" FontSize="10"/>
-                    </Button>
-                    <Button Style="{StaticResource NavButtonStyle}"
-                            Command="{Binding NextWeekCommand}"
-                            Margin="2,0,0,0"
-                            ToolTip="Следующая неделя">
-                        <TextBlock Text="▶" FontSize="10"/>
-                    </Button>
-                    <TextBlock Text="{Binding PeriodTitle}" 
-                               FontSize="16" 
-                               FontWeight="SemiBold"
-                               Margin="12,0,0,0"
-                               VerticalAlignment="Center"/>
-                </StackPanel>
-                
-                <!-- Ссылка на включение поиска -->
-                <TextBlock Grid.Column="1" 
-                           HorizontalAlignment="Left"
-                           Margin="20,0,0,0"
-                           VerticalAlignment="Center">
-                    <Hyperlink>Нажмите эту ссылку для включения мгновенного поиска</Hyperlink>
-                </TextBlock>
-            </Grid>
+            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                <Button Content="◀" Width="24" Height="24" Command="{Binding PreviousWeekCommand}" Margin="0,0,2,0"/>
+                <Button Content="▶" Width="24" Height="24" Command="{Binding NextWeekCommand}"/>
+                <TextBlock Text="{Binding PeriodTitle}" 
+                           FontSize="16" 
+                           FontWeight="SemiBold"
+                           Margin="12,0,0,0"
+                           VerticalAlignment="Center"/>
+            </StackPanel>
         </Border>
         
         <!-- Основная область календаря -->
-        <Grid Grid.Row="2" Grid.Column="0">
+        <Grid Grid.Row="2">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
@@ -159,13 +82,12 @@
                     <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
                 
-                <!-- Пустой угол слева -->
                 <Border Grid.Column="0" 
                         Background="{StaticResource HeaderGradient}"
-                        BorderBrush="{StaticResource OutlookBorderGrayBrush}"
-                        BorderThickness="0,0,1,1"/>
+                        BorderBrush="{StaticResource BorderGray}"
+                        BorderThickness="0,0,1,1"
+                        Height="40"/>
                 
-                <!-- Заголовки дней -->
                 <ItemsControl Grid.Column="1" ItemsSource="{Binding Days}">
                     <ItemsControl.ItemsPanel>
                         <ItemsPanelTemplate>
@@ -174,38 +96,22 @@
                     </ItemsControl.ItemsPanel>
                     <ItemsControl.ItemTemplate>
                         <DataTemplate>
-                            <Border Style="{StaticResource DayHeaderStyle}">
-                                <Border.Background>
-                                    <MultiBinding Converter="{StaticResource BoolToVisibilityConverter}">
-                                        <Binding Path="IsWeekend"/>
-                                    </MultiBinding>
-                                </Border.Background>
-                                <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
-                                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                                        <TextBlock Text="{Binding DayNumber}" 
-                                                   FontSize="14" 
-                                                   FontWeight="Bold"
-                                                   Foreground="#333"/>
-                                        <TextBlock Text="{Binding DayOfWeekShort}" 
-                                                   FontSize="14" 
-                                                   Margin="6,0,0,0"
-                                                   Foreground="#666"/>
-                                    </StackPanel>
+                            <Border Background="{StaticResource HeaderGradient}"
+                                    BorderBrush="{StaticResource BorderGray}"
+                                    BorderThickness="0,0,1,1"
+                                    Height="40">
+                                <StackPanel Orientation="Horizontal" 
+                                            HorizontalAlignment="Center" 
+                                            VerticalAlignment="Center">
+                                    <TextBlock Text="{Binding DayNumber}" 
+                                               FontSize="14" 
+                                               FontWeight="Bold"
+                                               Foreground="#333"/>
+                                    <TextBlock Text="{Binding DayOfWeekShort}" 
+                                               FontSize="14" 
+                                               Margin="6,0,0,0"
+                                               Foreground="#666"/>
                                 </StackPanel>
-                                <!-- Индикатор "сегодня" -->
-                                <Border.Style>
-                                    <Style TargetType="Border" BasedOn="{StaticResource DayHeaderStyle}">
-                                        <Style.Triggers>
-                                            <DataTrigger Binding="{Binding IsToday}" Value="True">
-                                                <Setter Property="BorderBrush" Value="{StaticResource OutlookTodayBorderBrush}"/>
-                                                <Setter Property="BorderThickness" Value="2"/>
-                                            </DataTrigger>
-                                            <DataTrigger Binding="{Binding IsWeekend}" Value="True">
-                                                <Setter Property="Background" Value="{StaticResource OutlookWeekendBgBrush}"/>
-                                            </DataTrigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </Border.Style>
                             </Border>
                         </DataTemplate>
                     </ItemsControl.ItemTemplate>
@@ -213,7 +119,7 @@
             </Grid>
             
             <!-- Многодневные события -->
-            <Grid Grid.Row="1" MinHeight="26">
+            <Grid Grid.Row="1" MinHeight="30">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="50"/>
                     <ColumnDefinition Width="*"/>
@@ -221,25 +127,25 @@
                 
                 <Border Grid.Column="0" 
                         Background="White"
-                        BorderBrush="{StaticResource OutlookBorderGrayBrush}"
+                        BorderBrush="{StaticResource BorderGray}"
                         BorderThickness="0,0,1,1"/>
                 
                 <Border Grid.Column="1"
                         Background="White"
-                        BorderBrush="{StaticResource OutlookBorderGrayBrush}"
-                        BorderThickness="0,0,0,1">
-                    <ItemsControl ItemsSource="{Binding MultiDayEvents}" Margin="4,2">
+                        BorderBrush="{StaticResource BorderGray}"
+                        BorderThickness="0,0,0,1"
+                        Padding="4,4">
+                    <ItemsControl ItemsSource="{Binding MultiDayEvents}">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
-                                <Border Style="{StaticResource MultiDayEventStyle}"
-                                        Background="{Binding Category, Converter={StaticResource CategoryToBackgroundConverter}}"
-                                        BorderBrush="{Binding Category, Converter={StaticResource CategoryToBackgroundConverter}}">
+                                <Border Background="#FFA500"
+                                        CornerRadius="2"
+                                        Padding="6,2"
+                                        Margin="0,1">
                                     <TextBlock Text="{Binding Title}"
-                                               Foreground="{Binding Category, Converter={StaticResource CategoryToForegroundConverter}}"
+                                               Foreground="White"
                                                FontWeight="SemiBold"
-                                               FontSize="11"
-                                               VerticalAlignment="Center"
-                                               TextTrimming="CharacterEllipsis"/>
+                                               FontSize="11"/>
                                 </Border>
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
@@ -247,7 +153,7 @@
                 </Border>
             </Grid>
             
-            <!-- Сетка календаря с временными слотами -->
+            <!-- Сетка календаря -->
             <ScrollViewer Grid.Row="2" 
                           VerticalScrollBarVisibility="Auto"
                           HorizontalScrollBarVisibility="Disabled">
@@ -257,7 +163,7 @@
                         <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
                     
-                    <!-- Временная шкала слева -->
+                    <!-- Временная шкала -->
                     <ItemsControl Grid.Column="0" ItemsSource="{Binding Hours}">
                         <ItemsControl.ItemsPanel>
                             <ItemsPanelTemplate>
@@ -266,22 +172,21 @@
                         </ItemsControl.ItemsPanel>
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
-                                <Border Height="{Binding DataContext.HourHeight, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                        BorderBrush="{StaticResource OutlookGridLineBrush}"
+                                <Border Height="60"
+                                        BorderBrush="{StaticResource GridLine}"
                                         BorderThickness="0,0,1,1"
                                         Background="White">
                                     <TextBlock Text="{Binding StringFormat='{}{0}:00'}"
                                                FontSize="10"
                                                Foreground="#666"
-                                               Margin="4,0,4,0"
-                                               VerticalAlignment="Top"
+                                               Margin="4,2,4,0"
                                                HorizontalAlignment="Right"/>
                                 </Border>
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
                     
-                    <!-- Колонки дней с событиями -->
+                    <!-- Колонки дней -->
                     <ItemsControl Grid.Column="1" ItemsSource="{Binding Days}">
                         <ItemsControl.ItemsPanel>
                             <ItemsPanelTemplate>
@@ -291,7 +196,7 @@
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
                                 <Grid>
-                                    <!-- Фон с сеткой часов -->
+                                    <!-- Фон с сеткой -->
                                     <ItemsControl ItemsSource="{Binding DataContext.Hours, RelativeSource={RelativeSource AncestorType=UserControl}}">
                                         <ItemsControl.ItemsPanel>
                                             <ItemsPanelTemplate>
@@ -300,24 +205,16 @@
                                         </ItemsControl.ItemsPanel>
                                         <ItemsControl.ItemTemplate>
                                             <DataTemplate>
-                                                <Border Height="{Binding DataContext.HourHeight, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                                        Style="{StaticResource TimeSlotStyle}">
-                                                    <Border.Style>
-                                                        <Style TargetType="Border" BasedOn="{StaticResource TimeSlotStyle}">
-                                                            <Style.Triggers>
-                                                                <DataTrigger Binding="{Binding DataContext.IsWeekend, RelativeSource={RelativeSource AncestorType=Grid}}" Value="True">
-                                                                    <Setter Property="Background" Value="{StaticResource OutlookWeekendBgBrush}"/>
-                                                                </DataTrigger>
-                                                            </Style.Triggers>
-                                                        </Style>
-                                                    </Border.Style>
-                                                </Border>
+                                                <Border Height="60"
+                                                        BorderBrush="{StaticResource GridLine}"
+                                                        BorderThickness="0,0,1,1"
+                                                        Background="White"/>
                                             </DataTemplate>
                                         </ItemsControl.ItemTemplate>
                                     </ItemsControl>
                                     
-                                    <!-- События дня (позиционируются абсолютно) -->
-                                    <ItemsControl ItemsSource="{Binding Events}">
+                                    <!-- События дня -->
+                                    <ItemsControl ItemsSource="{Binding Events}" Margin="2,0">
                                         <ItemsControl.ItemsPanel>
                                             <ItemsPanelTemplate>
                                                 <Canvas/>
@@ -325,16 +222,61 @@
                                         </ItemsControl.ItemsPanel>
                                         <ItemsControl.ItemContainerStyle>
                                             <Style TargetType="ContentPresenter">
-                                                <Setter Property="Canvas.Top" Value="{Binding StartTime, Converter={StaticResource TimeToTopConverter}}"/>
-                                                <Setter Property="Width" Value="{Binding ActualWidth, RelativeSource={RelativeSource AncestorType=ItemsControl}, Converter={StaticResource DurationToHeightConverter}, ConverterParameter=0.95}"/>
+                                                <Setter Property="Canvas.Top">
+                                                    <Setter.Value>
+                                                        <MultiBinding>
+                                                            <MultiBinding.Converter>
+                                                                <converters:TimeToCanvasTopConverter/>
+                                                            </MultiBinding.Converter>
+                                                            <Binding Path="StartTime"/>
+                                                        </MultiBinding>
+                                                    </Setter.Value>
+                                                </Setter>
                                             </Style>
                                         </ItemsControl.ItemContainerStyle>
                                         <ItemsControl.ItemTemplate>
                                             <DataTemplate>
-                                                <controls:EventControl 
-                                                    DataContext="{Binding}"
-                                                    Height="{Binding Duration, Converter={StaticResource DurationToHeightConverter}}"
-                                                    Margin="2,0,4,0"/>
+                                                <Border CornerRadius="3"
+                                                        Padding="4,2"
+                                                        Margin="0,0,4,0"
+                                                        Width="120"
+                                                        MinHeight="25"
+                                                        Cursor="Hand">
+                                                    <Border.Style>
+                                                        <Style TargetType="Border">
+                                                            <Setter Property="Background" Value="#90EE90"/>
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding Category}" Value="Important">
+                                                                    <Setter Property="Background" Value="#FF6347"/>
+                                                                </DataTrigger>
+                                                                <DataTrigger Binding="{Binding Category}" Value="Business">
+                                                                    <Setter Property="Background" Value="#6495ED"/>
+                                                                </DataTrigger>
+                                                                <DataTrigger Binding="{Binding Category}" Value="Meeting">
+                                                                    <Setter Property="Background" Value="#FFFF96"/>
+                                                                </DataTrigger>
+                                                                <DataTrigger Binding="{Binding Category}" Value="Travel">
+                                                                    <Setter Property="Background" Value="#ADD8E6"/>
+                                                                </DataTrigger>
+                                                                <DataTrigger Binding="{Binding Category}" Value="Holiday">
+                                                                    <Setter Property="Background" Value="#FFA500"/>
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </Border.Style>
+                                                    <StackPanel>
+                                                        <TextBlock Text="{Binding Title}"
+                                                                   FontWeight="SemiBold"
+                                                                   FontSize="11"
+                                                                   TextWrapping="Wrap"
+                                                                   Foreground="#333"/>
+                                                        <TextBlock FontSize="10" Foreground="#555">
+                                                            <Run Text="{Binding StartTime, StringFormat='{}{0:HH:mm}', Mode=OneWay}"/>
+                                                            <Run Text=" – "/>
+                                                            <Run Text="{Binding EndTime, StringFormat='{}{0:HH:mm}', Mode=OneWay}"/>
+                                                        </TextBlock>
+                                                    </StackPanel>
+                                                </Border>
                                             </DataTemplate>
                                         </ItemsControl.ItemTemplate>
                                     </ItemsControl>
@@ -346,122 +288,45 @@
             </ScrollViewer>
         </Grid>
         
-        <!-- Правая боковая панель -->
-        <Border Grid.Row="2" Grid.Column="1" 
-                Style="{StaticResource SidePanelStyle}"
-                Width="25">
-            <Grid>
-                <!-- Вкладка "Список дел" -->
-                <Border Style="{StaticResource SideTabStyle}"
-                        VerticalAlignment="Top"
-                        Margin="0,20,0,0">
-                    <TextBlock Text="Список дел"
-                               FontSize="10"
-                               Foreground="#333">
-                        <TextBlock.LayoutTransform>
-                            <RotateTransform Angle="90"/>
-                        </TextBlock.LayoutTransform>
-                    </TextBlock>
-                </Border>
-                
-                <!-- Вкладка "Задачи сегодня" -->
-                <Border Style="{StaticResource SideTabStyle}"
-                        VerticalAlignment="Top"
-                        Margin="0,120,0,0">
-                    <TextBlock Text="Задачи сегодня"
-                               FontSize="10"
-                               Foreground="#333">
-                        <TextBlock.LayoutTransform>
-                            <RotateTransform Angle="90"/>
-                        </TextBlock.LayoutTransform>
-                    </TextBlock>
-                </Border>
-            </Grid>
-        </Border>
-        
         <!-- Нижняя панель задач -->
-        <Border Grid.Row="3" Grid.ColumnSpan="2"
+        <Border Grid.Row="3"
                 Background="White"
-                BorderBrush="{StaticResource OutlookBorderGrayBrush}"
+                BorderBrush="{StaticResource BorderGray}"
                 BorderThickness="0,1,0,0"
-                MaxHeight="150">
+                Padding="8,4"
+                MaxHeight="120">
             <Grid>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
                 
-                <!-- Заголовок панели задач -->
-                <Border Grid.Row="0" 
-                        Background="{StaticResource ToolbarGradient}"
-                        BorderBrush="{StaticResource OutlookBorderGrayBrush}"
-                        BorderThickness="0,0,0,1"
-                        Padding="8,4">
-                    <Grid>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="*"/>
-                        </Grid.ColumnDefinitions>
-                        
-                        <TextBlock Grid.Column="0" 
-                                   Text="Задачи"
-                                   FontWeight="Bold"
-                                   VerticalAlignment="Center">
-                            <TextBlock.LayoutTransform>
-                                <RotateTransform Angle="-90"/>
-                            </TextBlock.LayoutTransform>
-                        </TextBlock>
-                        
-                        <TextBlock Grid.Column="1" 
-                                   Text="Показывать задачи по: Срок"
-                                   Margin="8,0,0,0"
-                                   VerticalAlignment="Center"
-                                   Foreground="#666"/>
-                    </Grid>
-                </Border>
+                <TextBlock Grid.Row="0" 
+                           Text="Задачи - Показывать по: Срок"
+                           Foreground="#666"
+                           Margin="0,0,0,4"/>
                 
-                <!-- Список задач -->
-                <ScrollViewer Grid.Row="1" 
-                              VerticalScrollBarVisibility="Auto"
-                              MaxHeight="100">
-                    <ItemsControl ItemsSource="{Binding Tasks}">
-                        <ItemsControl.ItemsPanel>
-                            <ItemsPanelTemplate>
-                                <UniformGrid Columns="3"/>
-                            </ItemsPanelTemplate>
-                        </ItemsControl.ItemsPanel>
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate>
-                                <Border Style="{StaticResource TaskItemStyle}">
-                                    <Grid>
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="Auto"/>
-                                            <ColumnDefinition Width="*"/>
-                                            <ColumnDefinition Width="Auto"/>
-                                        </Grid.ColumnDefinitions>
-                                        
-                                        <CheckBox Grid.Column="0"
-                                                  Style="{StaticResource TaskCheckBoxStyle}"
-                                                  IsChecked="{Binding IsCompleted}"/>
-                                        
-                                        <TextBlock Grid.Column="1"
-                                                   Text="{Binding Title}"
-                                                   TextTrimming="CharacterEllipsis"
-                                                   VerticalAlignment="Center"
-                                                   TextDecorations="{Binding Status, Converter={StaticResource TaskStatusToStrikethroughConverter}}"/>
-                                        
-                                        <Border Grid.Column="2"
-                                                Width="8" Height="8"
-                                                CornerRadius="4"
-                                                Margin="4,0,0,0"
-                                                Background="{Binding Priority, Converter={StaticResource PriorityToColorConverter}}"
-                                                VerticalAlignment="Center"/>
-                                    </Grid>
-                                </Border>
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
-                </ScrollViewer>
+                <ItemsControl Grid.Row="1" ItemsSource="{Binding Tasks}">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <WrapPanel/>
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Border BorderBrush="{StaticResource GridLine}"
+                                    BorderThickness="0,0,0,1"
+                                    Padding="4,2"
+                                    Width="250"
+                                    Margin="0,0,10,0">
+                                <StackPanel Orientation="Horizontal">
+                                    <CheckBox IsChecked="{Binding IsCompleted}" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                    <TextBlock Text="{Binding Title}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
             </Grid>
         </Border>
     </Grid>
